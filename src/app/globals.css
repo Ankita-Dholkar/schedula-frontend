@@ -1,6 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-:root { --canvas: #f7f8f6; --ink: #1b2925; --muted: #66736e; --line: #dce2de; --brand: #0e6b56; --brand-deep: #08483a; }
-* { box-sizing: border-box; } html { background: var(--canvas); } body { background: var(--canvas); color: var(--ink); font-family: Arial, Helvetica, sans-serif; } button, a { -webkit-tap-highlight-color: transparent; } button { cursor: pointer; } button:focus-visible, a:focus-visible { outline: 3px solid #8fd6c2; outline-offset: 3px; }
-@media (prefers-reduced-motion: no-preference) { button, a { transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, color 160ms ease, border-color 160ms ease; } button:active { transform: scale(0.97); } }
+
+:root { 
+  --canvas: #F8F9FA; 
+  --ink: #333333; 
+  --muted: #6B7280; 
+  --line: #E5E7EB; 
+  --brand: #0F8287; 
+  --brand-deep: #0B6B6F; 
+  --status-completed: #10B981;
+  --status-pending: #F59E0B;
+  --status-confirmed: #8B5CF6;
+  --status-cancelled: #EF4444;
+}
+
+* { box-sizing: border-box; } 
+html { background: var(--canvas); } 
+body { background: var(--canvas); color: var(--ink); font-family: 'Inter', Arial, Helvetica, sans-serif; } 
+button, a { -webkit-tap-highlight-color: transparent; } 
+button { cursor: pointer; } 
+button:focus-visible, a:focus-visible { outline: 3px solid #8fd6c2; outline-offset: 3px; }
+
+@media (prefers-reduced-motion: no-preference) { 
+  button, a { transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, color 160ms ease, border-color 160ms ease; } 
+  button:active { transform: scale(0.97); } 
+}

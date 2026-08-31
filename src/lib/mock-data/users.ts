@@ -1,9 +1,9 @@
-export const mockUsers = [
-  {
-    id: "1",
-    name: "ankita",
-    email: "ankita@gmail.com",
-    mobile: "9876543210",
-    password: "password123",
-  },
+
+import { mockPatients } from "@/lib/mock-data/patients";
+import { mockDoctors } from "@/lib/mock-data/doctors";
+import type { User } from "@/types/user";
+
+export const mockUsers: User[] = [
+  ...mockPatients,
+  ...mockDoctors,
 ];

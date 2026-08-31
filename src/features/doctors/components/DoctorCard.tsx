@@ -1,18 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Heart } from "lucide-react";
+import { Heart, UserCircle2 } from "lucide-react";
 import type { Doctor } from "@/types/doctor";
 
 type DoctorCardProps = {
   doctor: Doctor;
+  priority?: boolean; // true for first card — fixes LCP warning
 };
 
-export default function DoctorCard({ doctor }: DoctorCardProps) {
+export default function DoctorCard({ doctor, priority = false }: DoctorCardProps) {
+  const hasImage = !!doctor.image;
+
   return (
-    <Link
-      href={`/doctors/${doctor.id}`}
-      className="block"
-    >
+    <Link href={`/doctors/${doctor.id}`} className="block">
       <article
         className="
           flex
@@ -32,7 +32,7 @@ export default function DoctorCard({ doctor }: DoctorCardProps) {
           hover:shadow-md
         "
       >
-        {/* Doctor Image */}
+        {/* Doctor Image / Avatar */}
         <div
           className="
             relative
@@ -47,13 +47,20 @@ export default function DoctorCard({ doctor }: DoctorCardProps) {
             lg:w-[125px]
           "
         >
-          <Image
-            src={doctor.image}
-            alt={doctor.name}
-            fill
-            sizes="(max-width: 640px) 105px, (max-width: 1024px) 115px, 125px"
-            className="object-cover"
-          />
+          {hasImage ? (
+            <Image
+              src={doctor.image}
+              alt={doctor.name}
+              fill
+              sizes="(max-width: 640px) 105px, (max-width: 1024px) 115px, 125px"
+              className="object-cover"
+              priority={priority}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-teal-50">
+              <UserCircle2 size={60} className="text-[var(--brand)] opacity-60" />
+            </div>
+          )}
         </div>
 
         {/* Doctor Information */}
