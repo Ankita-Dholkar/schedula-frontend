@@ -3,25 +3,54 @@
 type DateSelectorProps = {
   selectedDate: string;
   onSelectDate: (date: string) => void;
+  activeDays?: string[]; // day names doctor is available e.g. ["Monday", "Wednesday"]
 };
 
-const dates = [
-  { day: "28", weekDay: "THU", value: "2026-08-28" },
-  { day: "29", weekDay: "FRI", value: "2026-08-29" },
-  { day: "30", weekDay: "SAT", value: "2026-08-30" },
-  { day: "31", weekDay: "SUN", value: "2026-08-31" },
-  { day: "01", weekDay: "MON", value: "2026-09-01" },
-];
+// Generate the next 14 days from today
+function generateDates(activeDays: string[]) {
+  const result = [];
+  const today = new Date();
+
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+
+    const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
+
+    // If activeDays provided, only show days the doctor works
+    if (activeDays.length > 0 && !activeDays.includes(dayName)) continue;
+
+    const value = d.toISOString().split("T")[0]; // "YYYY-MM-DD"
+    const day = String(d.getDate()).padStart(2, "0");
+    const weekDay = d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+
+    result.push({ day, weekDay, value, dayName });
+  }
+
+  return result;
+}
 
 export default function DateSelector({
   selectedDate,
   onSelectDate,
+  activeDays = [],
 }: DateSelectorProps) {
+  const dates = generateDates(activeDays);
+
+  if (dates.length === 0) {
+    return (
+      <section className="mt-6">
+        <h2 className="text-[18px] font-semibold text-[var(--ink)]">Select Date</h2>
+        <p className="mt-3 text-sm text-[var(--muted)]">
+          This doctor has no available days set up yet.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="mt-6">
-      <h2 className="text-[18px] font-semibold text-[#252525]">
-        Select Date
-      </h2>
+      <h2 className="text-[18px] font-semibold text-[var(--ink)]">Select Date</h2>
 
       <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
         {dates.map((date) => {
@@ -34,17 +63,14 @@ export default function DateSelector({
               onClick={() => onSelectDate(date.value)}
               className={`flex min-w-[62px] flex-col items-center rounded-xl border px-3 py-3 transition-all ${
                 isSelected
-                  ? "border-[#43BCD5] bg-[#43BCD5] text-white"
-                  : "border-[#E2E5E9] bg-white text-[#252525] hover:border-[#43BCD5]"
+                  ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                  : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)]"
               }`}
             >
-              <span className="text-[18px] font-semibold">
-                {date.day}
-              </span>
-
+              <span className="text-[18px] font-semibold">{date.day}</span>
               <span
                 className={`mt-1 text-[10px] ${
-                  isSelected ? "text-white" : "text-[#8B95A1]"
+                  isSelected ? "text-white" : "text-[var(--muted)]"
                 }`}
               >
                 {date.weekDay}
