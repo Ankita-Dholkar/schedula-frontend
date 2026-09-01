@@ -56,7 +56,7 @@ export default function LoginForm() {
         if (user.role === "doctor") {
           window.location.href = "/doctor/dashboard";
         } else {
-          window.location.href = "/doctors";
+          window.location.href = "/user/doctors";
         }
       }, 1500);
     } catch (error) {

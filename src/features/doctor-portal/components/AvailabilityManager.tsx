@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Clock, RotateCcw } from "lucide-react";
-import type { DoctorAvailability, DaySchedule } from "@/types/availability";
+import type { DoctorAvailability, DateSchedule } from "@/types/availability";
 import { generateSlots, saveDoctorAvailability } from "@/lib/mock-data/availability";
 import Toast from "@/features/auth/components/Toast";
 
@@ -11,81 +11,73 @@ type Props = {
   initialAvailability: DoctorAvailability;
 };
 
-const DAYS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-] as const;
-
 const DURATIONS = [15, 30, 45, 60] as const;
 
-const dayShort: Record<string, string> = {
-  Monday: "Mon",
-  Tuesday: "Tue",
-  Wednesday: "Wed",
-  Thursday: "Thu",
-  Friday: "Fri",
-  Saturday: "Sat",
-  Sunday: "Sun",
-};
-
 export default function AvailabilityManager({ doctorId, initialAvailability }: Props) {
-  const [availability, setAvailability] = useState<DoctorAvailability>(initialAvailability);
+  // Migrate old 'day'-keyed data to new 'date'-keyed format by starting fresh
+  const sanitize = (avail: DoctorAvailability): DoctorAvailability => {
+    const hasOldFormat = avail.schedule.some(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (s: any) => typeof s.day !== "undefined" && typeof s.date === "undefined"
+    );
+    if (hasOldFormat) {
+      return { doctorId: avail.doctorId, schedule: [], offDates: [] };
+    }
+    // Also drop any entries without slots (leftover inactive placeholders)
+    return { ...avail, schedule: avail.schedule.filter((s) => s.isActive && s.slots.length > 0) };
+  };
+
+  const [availability, setAvailability] = useState<DoctorAvailability>(() =>
+    sanitize(initialAvailability)
+  );
   
-  const firstActiveDay = initialAvailability.schedule.find((s) => s.isActive)?.day || "Monday";
-  const [selectedDay, setSelectedDay] = useState<string>(firstActiveDay);
-  
+  const today = new Date().toISOString().split("T")[0];
+  const [selectedDate, setSelectedDate] = useState<string>(today);
+  const [newSlotTime, setNewSlotTime] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const currentDaySchedule = availability.schedule.find((s) => s.day === selectedDay)!;
+  // Find or create schedule for the selected date
+  const currentDaySchedule = availability.schedule.find((s) => s.date === selectedDate) || {
+    date: selectedDate,
+    isActive: true,
+    startTime: "09:00",
+    endTime: "17:00",
+    slotDuration: 30,
+    slots: [],
+  };
 
-  // Save to localStorage whenever availability changes (including on initial mount).
-  // This ensures the booking page always reads up-to-date doctor slots.
+  // Persist whenever availability changes
   useEffect(() => {
     saveDoctorAvailability(availability);
   }, [availability]);
 
-  // Toggle a day on/off
-  const toggleDay = (day: string) => {
-    setAvailability((prev) => ({
-      ...prev,
-      schedule: prev.schedule.map((s) =>
-        s.day === day
-          ? { ...s, isActive: !s.isActive, slots: !s.isActive ? generateSlots(doctorId, day, s.startTime, s.endTime, s.slotDuration) : [] }
-          : s
-      ),
-    }));
+  // Update a field (startTime, endTime, slotDuration) for the selected date
+  const updateDayField = (field: keyof DateSchedule, value: string | number) => {
+    setAvailability((prev) => {
+      const exists = prev.schedule.some((s) => s.date === selectedDate);
+      const newSchedule = exists
+        ? prev.schedule.map((s) => (s.date === selectedDate ? { ...s, [field]: value } : s))
+        : [...prev.schedule, { ...currentDaySchedule, [field]: value }];
+      return { ...prev, schedule: newSchedule };
+    });
   };
 
-  // Update a field (startTime, endTime, slotDuration) for the selected day
-  const updateDayField = (field: keyof DaySchedule, value: string | number) => {
-    setAvailability((prev) => ({
-      ...prev,
-      schedule: prev.schedule.map((s) =>
-        s.day === selectedDay ? { ...s, [field]: value } : s
-      ),
-    }));
-  };
-
-  // Regenerate slots for the selected day based on current settings
+  // Regenerate slots for the selected date based on current settings
   const regenerateSlots = () => {
     const s = currentDaySchedule;
     if (!s.startTime || !s.endTime || s.startTime >= s.endTime) {
       setToast({ message: "End time must be after start time.", type: "error" });
       return;
     }
-    const newSlots = generateSlots(doctorId, selectedDay, s.startTime, s.endTime, s.slotDuration);
-    setAvailability((prev) => ({
-      ...prev,
-      schedule: prev.schedule.map((d) =>
-        d.day === selectedDay ? { ...d, slots: newSlots } : d
-      ),
-    }));
+    const newSlots = generateSlots(doctorId, selectedDate, s.startTime, s.endTime, s.slotDuration);
+    setAvailability((prev) => {
+      const exists = prev.schedule.some((d) => d.date === selectedDate);
+      const newSchedule = exists
+        ? prev.schedule.map((d) => (d.date === selectedDate ? { ...d, slots: newSlots, isActive: true } : d))
+        : [...prev.schedule, { ...s, slots: newSlots, isActive: true }];
+      return { ...prev, schedule: newSchedule };
+    });
   };
 
   // Delete a single slot
@@ -93,14 +85,12 @@ export default function AvailabilityManager({ doctorId, initialAvailability }: P
     setAvailability((prev) => ({
       ...prev,
       schedule: prev.schedule.map((d) =>
-        d.day === selectedDay
+        d.date === selectedDate
           ? { ...d, slots: d.slots.filter((sl) => sl.id !== slotId) }
           : d
       ),
     }));
   };
-
-  const [newSlotTime, setNewSlotTime] = useState("");
 
   // Add a single custom slot
   const addSlot = () => {
@@ -113,31 +103,40 @@ export default function AvailabilityManager({ doctorId, initialAvailability }: P
     const endM = endTotalMins % 60;
     const endStr = `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
     const newSlot = {
-      id: `${doctorId}_${selectedDay}_${newSlotTime}`,
+      id: `${doctorId}_${selectedDate}_${newSlotTime}`,
       start: newSlotTime,
       end: endStr,
       isBooked: false,
     };
 
     setAvailability((prev) => {
-      const dayData = prev.schedule.find((d) => d.day === selectedDay);
+      const dayData = prev.schedule.find((d) => d.date === selectedDate);
       if (dayData?.slots.some((s) => s.start === newSlotTime)) {
         setToast({ message: "Slot already exists", type: "error" });
         return prev;
       }
-      return {
-        ...prev,
-        schedule: prev.schedule.map((d) => {
-          if (d.day !== selectedDay) return d;
-          const newSlots = [...d.slots, newSlot].sort((a, b) => a.start.localeCompare(b.start));
-          return { ...d, slots: newSlots };
-        }),
-      };
+      const exists = prev.schedule.some((d) => d.date === selectedDate);
+      const newSchedule = exists
+        ? prev.schedule.map((d) => {
+            if (d.date !== selectedDate) return d;
+            const newSlots = [...d.slots, newSlot].sort((a, b) => a.start.localeCompare(b.start));
+            return { ...d, slots: newSlots, isActive: true };
+          })
+        : [...prev.schedule, { ...currentDaySchedule, slots: [newSlot], isActive: true }];
+
+      return { ...prev, schedule: newSchedule };
     });
     setNewSlotTime("");
   };
+  
+  // Remove the whole date from schedule (make inactive or remove entirely)
+  const removeDate = (dateToRemove: string) => {
+    setAvailability((prev) => ({
+      ...prev,
+      schedule: prev.schedule.filter((s) => s.date !== dateToRemove),
+    }));
+  };
 
-  // Save all availability (manual confirmation — data already auto-saved via useEffect)
   const handleSave = async () => {
     setIsSaving(true);
     await new Promise((r) => setTimeout(r, 600));
@@ -146,7 +145,7 @@ export default function AvailabilityManager({ doctorId, initialAvailability }: P
     setToast({ message: "Availability saved successfully!", type: "success" });
   };
 
-  const activeDays = availability.schedule.filter((s) => s.isActive);
+  const activeDays = availability.schedule.filter((s) => s.isActive && s.slots.length > 0);
   const totalSlots = activeDays.reduce((acc, d) => acc + d.slots.length, 0);
 
   return (
@@ -159,7 +158,7 @@ export default function AvailabilityManager({ doctorId, initialAvailability }: P
         <div>
           <h2 className="font-semibold text-[var(--ink)]">Appointment Availability</h2>
           <p className="mt-0.5 text-xs text-[var(--muted)]">
-            Configure your weekly recurring schedule. Patients will only see your available slots.
+            Configure your schedule for specific dates. Patients will only see these available slots.
           </p>
         </div>
         <button
@@ -177,184 +176,157 @@ export default function AvailabilityManager({ doctorId, initialAvailability }: P
         </button>
       </div>
 
-      {/* Summary chips */}
       <div className="mb-5 flex items-center gap-2 text-xs text-[var(--muted)]">
         <Clock size={13} />
         <span>
-          <strong className="text-[var(--ink)]">{activeDays.length}</strong> active days ·{" "}
+          <strong className="text-[var(--ink)]">{activeDays.length}</strong> active dates ·{" "}
           <strong className="text-[var(--ink)]">{totalSlots}</strong> total slots
         </span>
       </div>
 
-      {/* Day Toggle Chips */}
+      {/* Select Date via Calendar */}
       <div className="mb-6">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-          Working Days
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {DAYS.map((day) => {
-            const sched = availability.schedule.find((s) => s.day === day)!;
-            return (
-              <button
-                key={day}
-                type="button"
-                onClick={() => toggleDay(day)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                  sched.isActive
-                    ? "bg-[var(--brand)] text-white"
-                    : "border border-[var(--line)] bg-white text-[var(--muted)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
-                }`}
-              >
-                {dayShort[day]}
-              </button>
-            );
-          })}
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+          Select Date to Manage
+        </label>
+        <div className="flex gap-2 items-center">
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--brand)]"
+          />
         </div>
       </div>
 
-      {/* Day Configuration Panel */}
+      {/* Date Configuration Panel */}
       <div className="rounded-xl border border-[var(--line)] bg-[var(--canvas)] p-5">
-        {/* Day Tabs */}
-        <div className="mb-5 flex gap-1 overflow-x-auto">
-          {availability.schedule
-            .filter((s) => s.isActive)
-            .map((s) => (
+        <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[var(--ink)]">
+            Schedule for {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+            </h3>
+            {availability.schedule.some((s) => s.date === selectedDate) && (
               <button
-                key={s.day}
                 type="button"
-                onClick={() => setSelectedDay(s.day)}
-                className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition ${
-                  selectedDay === s.day
-                    ? "bg-white text-[var(--brand)] shadow-sm border border-[var(--line)]"
-                    : "text-[var(--muted)] hover:text-[var(--ink)]"
-                }`}
+                onClick={() => removeDate(selectedDate)}
+                className="text-xs text-red-500 hover:underline"
               >
-                {s.day}{" "}
-                <span className="ml-1 opacity-60">({s.slots.length})</span>
+                Remove all slots for this date
               </button>
-            ))}
-          {activeDays.length === 0 && (
-            <p className="text-xs text-[var(--muted)]">
-              Toggle at least one working day above.
-            </p>
-          )}
+            )}
         </div>
 
-        {currentDaySchedule?.isActive && (
-          <>
-            {/* Time & Duration Settings */}
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-[var(--ink)]">
-                  Start Time
-                </label>
-                <input
-                  type="time"
-                  value={currentDaySchedule.startTime}
-                  onChange={(e) => updateDayField("startTime", e.target.value)}
-                  className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--brand)]"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-[var(--ink)]">
-                  End Time
-                </label>
-                <input
-                  type="time"
-                  value={currentDaySchedule.endTime}
-                  onChange={(e) => updateDayField("endTime", e.target.value)}
-                  className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--brand)]"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-[var(--ink)]">
-                  Slot Duration
-                </label>
-                <select
-                  value={currentDaySchedule.slotDuration}
-                  onChange={(e) => updateDayField("slotDuration", Number(e.target.value))}
-                  className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--brand)]"
+        {/* Time & Duration Settings */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-[var(--ink)]">
+              Start Time
+            </label>
+            <input
+              type="time"
+              value={currentDaySchedule.startTime}
+              onChange={(e) => updateDayField("startTime", e.target.value)}
+              className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--brand)]"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-[var(--ink)]">
+              End Time
+            </label>
+            <input
+              type="time"
+              value={currentDaySchedule.endTime}
+              onChange={(e) => updateDayField("endTime", e.target.value)}
+              className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--brand)]"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-[var(--ink)]">
+              Slot Duration
+            </label>
+            <select
+              value={currentDaySchedule.slotDuration}
+              onChange={(e) => updateDayField("slotDuration", Number(e.target.value))}
+              className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--brand)]"
+            >
+              {DURATIONS.map((d) => (
+                <option key={d} value={d}>
+                  {d} minutes
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Actions: Regenerate & Add Single Slot */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={regenerateSlots}
+            className="flex items-center gap-2 rounded-lg border border-[var(--brand)] px-4 py-2 text-xs font-medium text-[var(--brand)] transition hover:bg-[var(--brand)] hover:text-white"
+          >
+            <RotateCcw size={13} />
+            Generate Slots
+          </button>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="time"
+              value={newSlotTime}
+              onChange={(e) => setNewSlotTime(e.target.value)}
+              className="rounded-lg border border-[var(--line)] bg-white px-3 py-1.5 text-xs text-[var(--ink)] outline-none focus:border-[var(--brand)]"
+            />
+            <button
+              type="button"
+              onClick={addSlot}
+              disabled={!newSlotTime}
+              className="flex items-center gap-1 rounded-lg bg-[var(--ink)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-stone-700 disabled:opacity-50"
+            >
+              <Plus size={13} />
+              Add
+            </button>
+          </div>
+        </div>
+
+        {/* Slot Grid */}
+        {currentDaySchedule.slots.length > 0 ? (
+          <div className="mt-5">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+              {currentDaySchedule.slots.length} slots for {selectedDate}
+            </p>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+              {currentDaySchedule.slots.map((slot) => (
+                <div
+                  key={slot.id}
+                  className={`group relative flex items-center justify-center rounded-lg border px-2 py-2 text-xs font-medium transition ${
+                    slot.isBooked
+                      ? "border-stone-200 bg-stone-100 text-stone-400 line-through"
+                      : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)]"
+                  }`}
                 >
-                  {DURATIONS.map((d) => (
-                    <option key={d} value={d}>
-                      {d} minutes
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Actions: Regenerate & Add Single Slot */}
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-              <button
-                type="button"
-                onClick={regenerateSlots}
-                className="flex items-center gap-2 rounded-lg border border-[var(--brand)] px-4 py-2 text-xs font-medium text-[var(--brand)] transition hover:bg-[var(--brand)] hover:text-white"
-              >
-                <RotateCcw size={13} />
-                Generate Slots for {selectedDay}
-              </button>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="time"
-                  value={newSlotTime}
-                  onChange={(e) => setNewSlotTime(e.target.value)}
-                  className="rounded-lg border border-[var(--line)] bg-white px-3 py-1.5 text-xs text-[var(--ink)] outline-none focus:border-[var(--brand)]"
-                />
-                <button
-                  type="button"
-                  onClick={addSlot}
-                  disabled={!newSlotTime}
-                  className="flex items-center gap-1 rounded-lg bg-[var(--ink)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-stone-700 disabled:opacity-50"
-                >
-                  <Plus size={13} />
-                  Add
-                </button>
-              </div>
-            </div>
-
-            {/* Slot Grid */}
-            {currentDaySchedule.slots.length > 0 ? (
-              <div className="mt-5">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  {currentDaySchedule.slots.length} slots for {selectedDay}
-                </p>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
-                  {currentDaySchedule.slots.map((slot) => (
-                    <div
-                      key={slot.id}
-                      className={`group relative flex items-center justify-center rounded-lg border px-2 py-2 text-xs font-medium transition ${
-                        slot.isBooked
-                          ? "border-stone-200 bg-stone-100 text-stone-400 line-through"
-                          : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)]"
-                      }`}
+                  {slot.start}
+                  {!slot.isBooked && (
+                    <button
+                      type="button"
+                      onClick={() => deleteSlot(slot.id)}
+                      className="absolute -right-1.5 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white group-hover:flex"
+                      aria-label={`Remove slot ${slot.start}`}
                     >
-                      {slot.start}
-                      {!slot.isBooked && (
-                        <button
-                          type="button"
-                          onClick={() => deleteSlot(slot.id)}
-                          className="absolute -right-1.5 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white group-hover:flex"
-                          aria-label={`Remove slot ${slot.start}`}
-                        >
-                          <Trash2 size={9} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                      <Trash2 size={9} />
+                    </button>
+                  )}
                 </div>
-              </div>
-            ) : (
-              <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] py-8 text-center">
-                <Clock size={24} className="mx-auto mb-2 text-[var(--line)]" />
-                <p className="text-xs text-[var(--muted)]">
-                  No slots yet. Set your hours and click{" "}
-                  <strong>Generate Slots</strong>.
-                </p>
-              </div>
-            )}
-          </>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] py-8 text-center">
+            <Clock size={24} className="mx-auto mb-2 text-[var(--line)]" />
+            <p className="text-xs text-[var(--muted)]">
+              No slots yet. Set your hours and click{" "}
+              <strong>Generate Slots</strong>.
+            </p>
+          </div>
         )}
       </div>
     </section>

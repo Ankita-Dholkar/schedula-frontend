@@ -25,33 +25,10 @@ const seedDoctorAvailability = (doctorId: string) => {
     const all = JSON.parse(stored);
     if (all[doctorId]) return; // already exists — don't overwrite
 
-    const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    const activeDays = new Set(["Monday", "Wednesday", "Friday"]);
-
-    const generateSlots = (day: string) => {
-      const slots = [];
-      let current = 9 * 60; // 09:00
-      const end    = 17 * 60; // 17:00
-      const dur    = 30;
-      while (current + dur <= end) {
-        const s = `${String(Math.floor(current / 60)).padStart(2, "0")}:${String(current % 60).padStart(2, "0")}`;
-        const e = `${String(Math.floor((current + dur) / 60)).padStart(2, "0")}:${String((current + dur) % 60).padStart(2, "0")}`;
-        slots.push({ id: `${doctorId}_${day}_${s}`, start: s, end: e, isBooked: false });
-        current += dur;
-      }
-      return slots;
-    };
-
+    // Start with an empty schedule; doctor fills via the portal calendar
     all[doctorId] = {
       doctorId,
-      schedule: DAYS.map((day) => ({
-        day,
-        isActive: activeDays.has(day),
-        startTime: "09:00",
-        endTime: "17:00",
-        slotDuration: 30,
-        slots: activeDays.has(day) ? generateSlots(day) : [],
-      })),
+      schedule: [],
       offDates: [],
     };
 

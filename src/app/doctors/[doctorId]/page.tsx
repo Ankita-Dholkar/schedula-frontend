@@ -8,19 +8,14 @@ import Link from "next/link";
 
 import { getAllDoctors } from "@/lib/mock-data/doctors";
 import { UserCircle2 } from "lucide-react";
-import { getAllAppointments, saveAppointment } from "@/lib/mock-data/appointments";
+import { getAllAppointments, saveAppointment, saveNotification } from "@/lib/mock-data/appointments";
 import { getDoctorAvailability, loadPersistedAvailability, saveDoctorAvailability } from "@/lib/mock-data/availability";
 import type { DoctorAvailability, TimeSlot } from "@/types/availability";
 
 import DateSelector from "@/features/booking/components/DateSelector";
 import SlotSelector from "@/features/booking/components/SlotSelector";
 
-// "YYYY-MM-DD" -> "Monday" | "Tuesday" | ...
-function getDayName(dateStr: string): string {
-  return new Date(`${dateStr}T12:00:00`).toLocaleDateString("en-US", {
-    weekday: "long",
-  });
-}
+// (Removed getDayName)
 
 // Format "09:00" -> "09:00 AM"
 function formatTime(time: string): string {
@@ -81,18 +76,18 @@ export default function DoctorBookingPage() {
     setAvailability(avail);
 
     // Set default date to first available day
-    const activeDayNames = avail.schedule
-      .filter((s) => s.isActive)
-      .map((s) => s.day);
+    const activeDatesList = avail.schedule
+      .filter((s) => s.isActive && s.slots.length > 0)
+      .map((s) => s.date);
 
-    for (let i = 0; i < 14; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      const name = d.toLocaleDateString("en-US", { weekday: "long" }) as
-        "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
-      if (activeDayNames.includes(name)) {
-        setSelectedDate(d.toISOString().split("T")[0]);
-        break;
+    if (activeDatesList.length > 0) {
+      // Find the earliest active date that is today or in the future
+      const todayStr = new Date().toISOString().split("T")[0];
+      const futureDates = activeDatesList.filter(d => d >= todayStr).sort();
+      if (futureDates.length > 0) {
+        setSelectedDate(futureDates[0]);
+      } else {
+        setSelectedDate(activeDatesList[0]);
       }
     }
   }, [doctorId, isCheckingAuth]);
@@ -113,14 +108,13 @@ export default function DoctorBookingPage() {
     );
   }
 
-  // Active days for DateSelector
-  const activeDayNames =
-    availability?.schedule.filter((s) => s.isActive).map((s) => s.day) ?? [];
+  // Active dates for DateSelector
+  const activeDates =
+    availability?.schedule.filter((s) => s.isActive && s.slots.length > 0).map((s) => s.date) ?? [];
 
-  // Slots for the selected day, with booked ones marked
-  const selectedDayName = getDayName(selectedDate);
+  // Slots for the selected date
   const daySchedule = availability?.schedule.find(
-    (s) => s.day === selectedDayName
+    (s) => s.date === selectedDate
   );
   const bookedTimes = getBookedTimes(doctor.name, selectedDate);
 
@@ -162,7 +156,7 @@ export default function DoctorBookingPage() {
       const updated = {
         ...availability,
         schedule: availability.schedule.map((s) =>
-          s.day === selectedDayName
+          s.date === selectedDate
             ? {
                 ...s,
                 slots: s.slots.map((sl) =>
@@ -178,8 +172,9 @@ export default function DoctorBookingPage() {
 
     // 3. Create and save Appointment
     const aptDuration = daySchedule?.slotDuration ?? 30;
+    const newAptId = `apt-${Date.now()}`;
     saveAppointment({
-      id: `apt-${Date.now()}`,
+      id: newAptId,
       patient: { 
         name: patientName, 
         initials: patientName.substring(0, 2).toUpperCase(), 
@@ -192,6 +187,12 @@ export default function DoctorBookingPage() {
       status: "pending",
       reason: "General Consultation",
       room: "Room TBD"
+    });
+
+    saveNotification({
+      appointmentId: newAptId,
+      patientName,
+      message: `Your booking request with ${doctor.name} was sent and is awaiting confirmation.`,
     });
 
     setIsBooked(true);
@@ -316,7 +317,7 @@ export default function DoctorBookingPage() {
         <DateSelector
           selectedDate={selectedDate}
           onSelectDate={handleDateSelect}
-          activeDays={activeDayNames}
+          activeDates={activeDates}
         />
 
         {/* Slot Selector — shows real slots from availability */}

@@ -6,9 +6,9 @@ export type TimeSlot = {
   isBooked: boolean;
 };
 
-// Availability for one day of the week
-export type DaySchedule = {
-  day: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+// Availability for a specific date
+export type DateSchedule = {
+  date: string; // "YYYY-MM-DD"
   isActive: boolean;
   startTime: string;   
   endTime: string;     
@@ -19,6 +19,6 @@ export type DaySchedule = {
 // Full availability record per doctor
 export type DoctorAvailability = {
   doctorId: string;
-  schedule: DaySchedule[];
+  schedule: DateSchedule[];
   offDates: string[]; // specific "YYYY-MM-DD" dates the doctor is off
 };

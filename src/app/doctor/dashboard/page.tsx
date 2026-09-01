@@ -4,18 +4,22 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   CalendarCheck, Clock, CheckCircle, XCircle,
-  User, ChevronRight, TrendingUp, Calendar,
+  User, ChevronRight, Calendar,
 } from "lucide-react";
-import { getAllAppointments } from "@/lib/mock-data/appointments";
+import { getAllAppointments, updateAppointmentStatus, getComputedAppointmentStatus } from "@/lib/mock-data/appointments";
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
 import DoctorPortalHeader from "@/features/doctor-portal/components/DoctorPortalHeader";
+import AppointmentDetailPanel from "@/features/doctor-portal/components/AppointmentDetailPanel";
 
 type StoredUser = { id: string; name: string; email: string; role: string };
 
-const statusConfig: Record<AppointmentStatus, { label: string; className: string }> = {
+const statusConfig: Record<AppointmentStatus | "upcoming", { label: string; className: string }> = {
   confirmed: { label: "Confirmed", className: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
-  pending:   { label: "Pending",   className: "bg-amber-50  text-amber-700  ring-amber-200"  },
-  cancelled: { label: "Cancelled", className: "bg-red-50    text-red-600    ring-red-200"    },
+  upcoming:  { label: "Upcoming",  className: "bg-blue-50 text-blue-700 ring-blue-200" },
+  pending:   { label: "Pending",   className: "bg-amber-50 text-amber-700 ring-amber-200" },
+  cancelled: { label: "Cancelled", className: "bg-stone-100 text-stone-600 ring-stone-200" },
+  completed: { label: "Completed", className: "bg-stone-100 text-stone-700 ring-stone-200" },
+  missed:    { label: "Missed",    className: "bg-red-100 text-red-800 ring-red-300" },
 };
 
 const formatTime = (iso: string) =>
@@ -29,6 +33,7 @@ const isSameDate = (iso: string, dateStr: string) => iso.startsWith(dateStr);
 export default function DoctorDashboardPage() {
   const [doctorName, setDoctorName] = useState<string>("");
   const [myAppointments, setMyAppointments] = useState<Appointment[]>([]);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   const todayStr = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
@@ -70,9 +75,12 @@ export default function DoctorDashboardPage() {
     pending:   myAppointments.filter((a) => a.status === "pending").length,
   };
 
-  // Upcoming: non-cancelled, sorted by date, max 5
+  // Upcoming: future pending or confirmed
   const upcoming = myAppointments
-    .filter((a) => a.status !== "cancelled")
+    .filter((a) => {
+      const computed = getComputedAppointmentStatus(a);
+      return computed === "pending" || computed === "upcoming";
+    })
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
     .slice(0, 5);
 
@@ -99,17 +107,14 @@ export default function DoctorDashboardPage() {
         {/* Today's Stats Cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
-            { label: "Today's Total",   value: todayCounts.total,     icon: CalendarCheck, color: "text-[var(--brand)]", bg: "bg-teal-50"    },
-            { label: "Confirmed",        value: todayCounts.confirmed, icon: CheckCircle,   color: "text-emerald-600",    bg: "bg-emerald-50" },
-            { label: "Pending",          value: todayCounts.pending,   icon: Clock,         color: "text-amber-600",      bg: "bg-amber-50"   },
-            { label: "Cancelled",        value: todayCounts.cancelled, icon: XCircle,       color: "text-red-500",        bg: "bg-red-50"     },
-          ].map(({ label, value, icon: Icon, color, bg }) => (
-            <div key={label} className="rounded-xl border border-[var(--line)] bg-white p-5">
-              <div className={`inline-flex rounded-lg ${bg} p-2.5`}>
-                <Icon size={20} className={color} strokeWidth={1.8} />
-              </div>
-              <p className="mt-4 text-2xl font-bold text-[var(--ink)]">{value}</p>
-              <p className="mt-0.5 text-xs text-[var(--muted)]">{label}</p>
+            { label: "Today's Total",   value: todayCounts.total },
+            { label: "Confirmed",        value: todayCounts.confirmed },
+            { label: "Pending",          value: todayCounts.pending },
+            { label: "Cancelled",        value: todayCounts.cancelled },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex flex-col justify-center rounded-2xl border border-[var(--line)] bg-white px-6 py-5 shadow-sm">
+              <p className="text-xl font-bold text-[var(--ink)]">{label}</p>
+              <p className="mt-2 text-5xl font-extrabold tracking-tight text-[var(--brand)]">{value}</p>
             </div>
           ))}
         </div>
@@ -117,7 +122,6 @@ export default function DoctorDashboardPage() {
         {/* All-time summary strip */}
         <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl border border-[var(--line)] bg-white px-5 py-3">
           <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
-            <TrendingUp size={15} className="text-[var(--brand)]" />
             <span>All-time:</span>
           </div>
           {[
@@ -180,7 +184,7 @@ export default function DoctorDashboardPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--line)] bg-[var(--canvas)]">
-                    {["Patient", "Date & Time", "Reason", "Room", "Duration", "Status"].map((h) => (
+                    {["Patient", "Date & Time", "Reason", "Room", "Duration", "Status", "Actions"].map((h) => (
                       <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                         {h}
                       </th>
@@ -189,7 +193,8 @@ export default function DoctorDashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-[var(--line)]">
                   {upcoming.map((apt) => {
-                    const { label, className } = statusConfig[apt.status];
+                    const computedStatus = getComputedAppointmentStatus(apt);
+                    const { label, className } = statusConfig[computedStatus];
                     return (
                       <tr key={apt.id} className="transition hover:bg-[var(--canvas)]">
                         <td className="px-5 py-3.5">
@@ -215,6 +220,24 @@ export default function DoctorDashboardPage() {
                             {label}
                           </span>
                         </td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setSelectedAppointment(apt)}
+                              className="rounded p-1.5 text-[var(--muted)] hover:bg-stone-100 hover:text-[var(--ink)] transition"
+                              title="View Patient Details"
+                            >
+                              <User size={16} />
+                            </button>
+                            <button
+                              onClick={() => setSelectedAppointment(apt)}
+                              className="rounded p-1.5 text-[var(--muted)] hover:bg-stone-100 hover:text-[var(--ink)] transition"
+                              title="View Appointment Schedule"
+                            >
+                              <Calendar size={16} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -224,6 +247,12 @@ export default function DoctorDashboardPage() {
           )}
         </div>
       </main>
+
+      <AppointmentDetailPanel
+        appointment={selectedAppointment}
+        onClose={() => setSelectedAppointment(null)}
+        onRefresh={refreshAppointments}
+      />
     </>
   );
 }
