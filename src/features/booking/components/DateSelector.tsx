@@ -3,26 +3,25 @@
 type DateSelectorProps = {
   selectedDate: string;
   onSelectDate: (date: string) => void;
-  activeDays?: string[]; // day names doctor is available e.g. ["Monday", "Wednesday"]
+  activeDates?: string[]; // specific dates doctor is available e.g. ["2026-09-01", "2026-09-02"]
 };
 
 // Generate the next 14 days from today
-function generateDates(activeDays: string[]) {
+function generateDates(activeDates: string[]) {
   const result = [];
   const today = new Date();
 
   for (let i = 0; i < 14; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
-
-    const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
-
-    // If activeDays provided, only show days the doctor works
-    if (activeDays.length > 0 && !activeDays.includes(dayName)) continue;
-
     const value = d.toISOString().split("T")[0]; // "YYYY-MM-DD"
+
+    // If activeDates provided, only show dates the doctor works
+    if (activeDates.length > 0 && !activeDates.includes(value)) continue;
+
     const day = String(d.getDate()).padStart(2, "0");
     const weekDay = d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+    const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
 
     result.push({ day, weekDay, value, dayName });
   }
@@ -33,9 +32,9 @@ function generateDates(activeDays: string[]) {
 export default function DateSelector({
   selectedDate,
   onSelectDate,
-  activeDays = [],
+  activeDates = [],
 }: DateSelectorProps) {
-  const dates = generateDates(activeDays);
+  const dates = generateDates(activeDates);
 
   if (dates.length === 0) {
     return (

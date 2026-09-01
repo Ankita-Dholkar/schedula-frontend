@@ -26,3 +26,121 @@ button:focus-visible, a:focus-visible { outline: 3px solid #8fd6c2; outline-offs
   button, a { transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, color 160ms ease, border-color 160ms ease; } 
   button:active { transform: scale(0.97); } 
 }
+
+/* ── react-big-calendar overrides ─────────────────────────────────── */
+.rbc-calendar {
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  background: #fff;
+}
+
+.rbc-toolbar {
+  background: var(--canvas);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rbc-toolbar button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  background: #fff;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.rbc-toolbar button:hover {
+  background: var(--canvas);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.rbc-toolbar button.rbc-active,
+.rbc-toolbar button.rbc-active:hover {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.rbc-toolbar-label {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.rbc-header {
+  background: var(--canvas);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rbc-today {
+  background: #f0fdfc;
+}
+
+.rbc-off-range-bg {
+  background: var(--canvas);
+}
+
+.rbc-time-slot {
+  border-top: 1px solid #f3f4f6;
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid var(--line);
+}
+
+.rbc-current-time-indicator {
+  background: var(--brand);
+  height: 2px;
+}
+
+.rbc-event {
+  border: none !important;
+  padding: 3px 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rbc-event:focus {
+  outline: 2px solid #8fd6c2;
+  outline-offset: 2px;
+}
+
+.rbc-event-label {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.rbc-show-more {
+  color: var(--brand);
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.rbc-month-view .rbc-date-cell {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.rbc-month-view .rbc-date-cell.rbc-now a {
+  color: var(--brand);
+}
+
+/* DnD drag ghost */
+.rbc-addons-dnd-drag-preview {
+  opacity: 0.7;
+}

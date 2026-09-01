@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, UserCircle2 } from "lucide-react";
+import { UserCircle2 } from "lucide-react";
 import type { Doctor } from "@/types/doctor";
 
 type DoctorCardProps = {
@@ -69,12 +69,6 @@ export default function DoctorCard({ doctor, priority = false }: DoctorCardProps
             <h2 className="truncate text-[16px] font-semibold text-[#252525] sm:text-[17px]">
               {doctor.name}
             </h2>
-
-            <Heart
-              size={20}
-              strokeWidth={1.8}
-              className="shrink-0 text-[#B5BDC8]"
-            />
           </div>
 
           <p className="mt-1.5 text-[11px] text-[#2AB7A9] sm:text-[12px]">

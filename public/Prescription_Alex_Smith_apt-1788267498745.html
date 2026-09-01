@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Prescription – Alex Smith</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; color: #1a1a1a; background: #fff; padding: 40px; max-width: 720px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0F8287; padding-bottom: 18px; margin-bottom: 24px; }
+    .clinic-name { font-size: 26px; font-weight: bold; color: #0F8287; letter-spacing: 0.5px; }
+    .clinic-sub { font-size: 12px; color: #555; margin-top: 4px; }
+    .rx-symbol { font-size: 48px; color: #0F8287; font-style: italic; line-height: 1; }
+    .section { margin-bottom: 20px; }
+    .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 6px; font-family: Arial, sans-serif; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8f9fa; border-radius: 8px; padding: 16px; }
+    .info-item label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #888; font-family: Arial, sans-serif; display: block; margin-bottom: 2px; }
+    .info-item span { font-size: 14px; color: #1a1a1a; font-weight: 600; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 20px 0; }
+    .medications { border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+    .med-header { background: #0F8287; color: white; padding: 10px 16px; font-family: Arial, sans-serif; font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+    .med-item { padding: 14px 16px; border-bottom: 1px solid #f0f0f0; }
+    .med-item:last-child { border-bottom: none; }
+    .med-name { font-size: 15px; font-weight: bold; color: #0F8287; }
+    .med-dosage { font-size: 12px; color: #555; margin-top: 3px; font-family: Arial, sans-serif; }
+    .med-duration { font-size: 11px; color: #888; margin-top: 2px; font-family: Arial, sans-serif; }
+    .notes { background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; padding: 14px; font-size: 13px; line-height: 1.6; }
+    .footer { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .signature-line { border-top: 2px solid #1a1a1a; width: 200px; padding-top: 8px; text-align: center; font-family: Arial, sans-serif; font-size: 12px; color: #555; }
+    .stamp { width: 80px; height: 80px; border: 3px solid #0F8287; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-align: center; color: #0F8287; font-size: 9px; font-weight: bold; font-family: Arial, sans-serif; letter-spacing: 1px; text-transform: uppercase; padding: 10px; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="clinic-name">Schedula Clinic</div>
+      <div class="clinic-sub">123 Medical Avenue, Healthcare District<br/>Phone: +91 98765 43210 | schedula.health</div>
+    </div>
+    <div class="rx-symbol">℞</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Patient Details</div>
+    <div class="info-grid">
+      <div class="info-item"><label>Patient Name</label><span>Alex Smith</span></div>
+      <div class="info-item"><label>Age</label><span>30 years</span></div>
+      <div class="info-item"><label>Date</label><span>September 1, 2026</span></div>
+      <div class="info-item"><label>Appointment ID</label><span>apt-1788267498745</span></div>
+      <div class="info-item"><label>Diagnosis</label><span>General Consultation</span></div>
+      <div class="info-item"><label>Type</label><span>Consultation</span></div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <div class="section">
+    <div class="section-title">Prescribed Medications</div>
+    <div class="medications">
+      <div class="med-header">Rx — Medications</div>
+      
+      <div class="med-item">
+        <div class="med-name">Ibuprofen 400mg</div>
+        <div class="med-dosage">📋 1 tablet, twice daily (after meals)</div>
+        <div class="med-duration">⏱ Duration: 5 days &nbsp;|&nbsp; Take with food</div>
+      </div>
+      <div class="med-item">
+        <div class="med-name">Multivitamin Complex —</div>
+        <div class="med-dosage">📋 1 tablet, once daily</div>
+        <div class="med-duration">⏱ Duration: 30 days &nbsp;|&nbsp; Best taken in the morning</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Doctor's Notes</div>
+    <div class="notes">General consultation completed. Patient advised to maintain a healthy diet, exercise regularly, and stay hydrated. Return if symptoms worsen.</div>
+  </div>
+
+  <div class="footer">
+    <div>
+      <div class="signature-line">
+        Dr. Prakash Das<br/>Sr. Psychologist
+      </div>
+    </div>
+    <div class="stamp">Schedula<br/>Clinic<br/>Verified</div>
+  </div>
+</body>
+</html>
