@@ -359,7 +359,7 @@ export default function SignupForm() {
 
   /* ─── Render ── */
   return (
-    <main className="min-h-screen bg-[var(--canvas)] px-4 py-10 flex items-start justify-center sm:items-center">
+    <main className="min-h-screen bg-[var(--brand)] px-4 py-10 flex items-start justify-center sm:items-center">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="w-full max-w-[520px]">

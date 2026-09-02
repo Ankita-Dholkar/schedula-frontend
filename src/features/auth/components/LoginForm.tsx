@@ -69,7 +69,7 @@ export default function LoginForm() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--canvas)] px-4 pb-8 pt-10 sm:px-6 sm:pt-12 lg:flex lg:items-center lg:justify-center lg:px-8 lg:py-8">
+    <main className="min-h-screen bg-[var(--brand)] px-4 pb-8 pt-10 sm:px-6 sm:pt-12 lg:flex lg:items-center lg:justify-center lg:px-8 lg:py-8">
       {toast && (
         <Toast
           message={toast.message}

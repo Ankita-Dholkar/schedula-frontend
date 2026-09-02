@@ -1,6 +1,6 @@
 import type { DoctorAvailability, DateSchedule } from "@/types/availability";
 
-// Helper: generate slots between startTime and endTime with given duration
+//  generate slots between startTime and endTime with given duration
 export function generateSlots(
   doctorId: string,
   date: string,
