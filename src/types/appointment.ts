@@ -11,6 +11,7 @@ export type Appointment = {
   reason: string;
   room: string;
   type?: string;
+  appointmentMode?: "in-person" | "online";
   notes?: string;
   updatedAt?: string;
   prescriptionAvailable?: boolean;

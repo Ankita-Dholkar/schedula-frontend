@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Calendar, Clock, Stethoscope, FileText, Download, Star, RefreshCw } from "lucide-react";
 import UserPortalHeader from "@/features/user-portal/components/UserPortalHeader";
 import ReviewModal from "@/features/user-portal/components/ReviewModal";
-import { getAllAppointments, getComputedAppointmentStatus } from "@/lib/mock-data/appointments";
+import { getAllAppointments, getComputedAppointmentStatus, saveDoctorNotification } from "@/lib/mock-data/appointments";
 import { downloadPrescription } from "@/lib/prescription";
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
 
@@ -35,10 +36,19 @@ const formatTime = (iso: string) =>
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat("en", { weekday: "long", day: "numeric", month: "short", year: "numeric" }).format(new Date(iso));
 
-export default function UserAppointmentsPage() {
+function UserAppointmentsPage() {
+  const searchParams = useSearchParams();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [activeTab, setActiveTab] = useState<FilterTab>("upcoming");
   const [reviewAppointment, setReviewAppointment] = useState<Appointment | null>(null);
+
+  // Read ?tab= query param and activate the correct tab
+  useEffect(() => {
+    const tabParam = searchParams?.get("tab");
+    if (tabParam && TABS.some((t) => t.value === tabParam)) {
+      setActiveTab(tabParam as FilterTab);
+    }
+  }, [searchParams]);
 
   const refreshAppointments = () => {
     try {
@@ -203,11 +213,24 @@ export default function UserAppointmentsPage() {
           appointment={reviewAppointment}
           onClose={() => setReviewAppointment(null)}
           onSubmit={(rating, review) => {
+            saveDoctorNotification({
+              appointmentId: reviewAppointment.id,
+              patientName: reviewAppointment.patient.name,
+              message: `New ${rating}-star review: "${review || 'No written feedback'}"`,
+            });
             alert(`Thanks for rating ${reviewAppointment.clinician} ${rating} stars!`);
             setReviewAppointment(null);
           }}
         />
       )}
     </>
+  );
+}
+
+export default function UserAppointmentsPageWrapper() {
+  return (
+    <Suspense fallback={<div className="flex flex-1 items-center justify-center"><span className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" /></div>}>
+      <UserAppointmentsPage />
+    </Suspense>
   );
 }

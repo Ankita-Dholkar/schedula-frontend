@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { CheckCircle2, ArrowLeft } from "lucide-react";
+import { CheckCircle2, ArrowLeft, Stethoscope, Video, Building2, FileText } from "lucide-react";
 import Link from "next/link";
 import { UserCircle2 } from "lucide-react";
 
@@ -45,6 +45,11 @@ export default function UserDoctorBookingPage() {
   const [error, setError] = useState("");
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [doctor, setDoctor] = useState<ReturnType<typeof getAllDoctors>[number] | null>(null);
+
+  // New booking detail fields
+  const [appointmentType, setAppointmentType] = useState("Consultation");
+  const [appointmentMode, setAppointmentMode] = useState<"in-person" | "online">("in-person");
+  const [reasonForVisit, setReasonForVisit] = useState("");
 
   useEffect(() => {
     const user = localStorage.getItem("loggedInUser");
@@ -109,6 +114,10 @@ export default function UserDoctorBookingPage() {
       setError("Please select a time slot before confirming.");
       return;
     }
+    if (!reasonForVisit.trim()) {
+      setError("Please describe your reason for visit.");
+      return;
+    }
     setError("");
 
     let patientName = "Guest User";
@@ -143,8 +152,10 @@ export default function UserDoctorBookingPage() {
       startsAt: `${selectedDate}T${selectedSlotObj.start}:00`,
       durationMinutes: aptDuration,
       status: "pending",
-      reason: "General Consultation",
-      room: "Room TBD",
+      reason: reasonForVisit.trim(),
+      type: appointmentType,
+      appointmentMode,
+      room: appointmentMode === "online" ? "Video Call" : "Room TBD",
     });
 
     saveNotification({
@@ -184,6 +195,14 @@ export default function UserDoctorBookingPage() {
                 <div className="flex justify-between">
                   <span className="text-[var(--muted)]">Time</span>
                   <span className="font-medium text-[var(--ink)]">{formatTime(selectedSlotObj.start)} – {formatTime(selectedSlotObj.end)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--muted)]">Type</span>
+                  <span className="font-medium text-[var(--ink)]">{appointmentType}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--muted)]">Mode</span>
+                  <span className="font-medium text-[var(--ink)]">{appointmentMode === "online" ? "Online (Video)" : "In-person"}</span>
                 </div>
               </div>
             </div>
@@ -248,6 +267,83 @@ export default function UserDoctorBookingPage() {
             </div>
           </section>
 
+          {/* ── Appointment Details ───────────────────────────────────────── */}
+          <section className="mt-5 rounded-xl border border-[var(--line)] bg-white p-5 shadow-sm">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">
+              <FileText size={16} className="text-[var(--brand)]" />
+              Appointment Details
+            </h2>
+
+            {/* Appointment Type */}
+            <div className="mb-4">
+              <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                <Stethoscope size={12} /> Appointment Type
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {["Consultation", "Check-up"].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setAppointmentType(t)}
+                    className={`rounded-lg border px-4 py-1.5 text-sm font-medium transition ${
+                      appointmentType === t
+                        ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                        : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Appointment Mode */}
+            <div className="mb-4">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                Mode
+              </label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAppointmentMode("in-person")}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-medium transition ${
+                    appointmentMode === "in-person"
+                      ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]"
+                      : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--brand)]"
+                  }`}
+                >
+                  <Building2 size={16} /> In-person
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAppointmentMode("online")}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-medium transition ${
+                    appointmentMode === "online"
+                      ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]"
+                      : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--brand)]"
+                  }`}
+                >
+                  <Video size={16} /> Online
+                </button>
+              </div>
+            </div>
+
+            {/* Reason for Visit */}
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                Reason for Visit <span className="text-red-400">*</span>
+              </label>
+              <textarea
+                value={reasonForVisit}
+                onChange={(e) => { setReasonForVisit(e.target.value); setError(""); }}
+                rows={3}
+                placeholder="Briefly describe your symptoms or reason for visiting (e.g. I have been having headaches for 3 days...)"
+                className="w-full rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)] placeholder:text-stone-400 resize-none"
+              />
+            </div>
+          </section>
+
+          {/* Date & Slot Selectors */}
           <DateSelector selectedDate={selectedDate} onSelectDate={handleDateSelect} activeDates={activeDates} />
           <SlotSelector
             selectedSlot={selectedSlotId}
