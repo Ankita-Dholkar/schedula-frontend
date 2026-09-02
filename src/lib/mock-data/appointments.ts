@@ -1,4 +1,5 @@
-﻿import type { Appointment, AppointmentStatus } from "@/types/appointment";
+import type { Appointment, AppointmentStatus } from "@/types/appointment";
+import { getAllPrescriptions } from "./prescriptions";
 
 export const appointments: Appointment[] = [
   // ── Past appointments ────────────────────────────────────────────
@@ -224,6 +225,7 @@ export function getAllAppointments(): Appointment[] {
     if (rawReschedules) reschedules = JSON.parse(rawReschedules);
   } catch { /* ignore */ }
 
+  const allPrescriptions = getAllPrescriptions();
   const all = [...appointments, ...storedAppointments];
   return all.map((apt) => {
     let result = statuses[apt.id] ? { ...apt, status: statuses[apt.id] } : apt;
@@ -231,8 +233,11 @@ export function getAllAppointments(): Appointment[] {
       result = { ...result, startsAt: reschedules[apt.id].newStartsAt, updatedAt: reschedules[apt.id].updatedAt };
     }
     
-    // Dynamically add prescription for any appointment marked as completed at runtime
-    if (result.status === "completed" && result.prescriptionAvailable === undefined) {
+    // Check if dynamic prescription exists
+    if (allPrescriptions[apt.id]) {
+      result = { ...result, prescriptionAvailable: true, prescriptionUrl: "#" };
+    } else if (result.status === "completed" && result.prescriptionAvailable === undefined) {
+      // Fallback for static mock data
       result = { ...result, prescriptionAvailable: true, prescriptionUrl: "#" };
     }
     
@@ -306,5 +311,33 @@ export function markNotificationRead(id: string) {
     const raw = localStorage.getItem("userNotifications");
     const list: AppointmentNotification[] = raw ? JSON.parse(raw) : [];
     localStorage.setItem("userNotifications", JSON.stringify(list.map((n) => n.id === id ? { ...n, read: true } : n)));
+  } catch { /* ignore */ }
+}
+
+export function saveDoctorNotification(payload: { appointmentId: string; patientName: string; message: string; doctorId?: string }) {
+  try {
+    const raw = localStorage.getItem("doctorNotifications");
+    const list: (AppointmentNotification & { doctorId?: string })[] = raw ? JSON.parse(raw) : [];
+    list.push({ ...payload, id: `dnotif-${Date.now()}`, createdAt: new Date().toISOString(), read: false });
+    localStorage.setItem("doctorNotifications", JSON.stringify(list));
+  } catch { /* ignore */ }
+}
+
+export function getDoctorNotifications(doctorId?: string): AppointmentNotification[] {
+  try {
+    const raw = localStorage.getItem("doctorNotifications");
+    const list: (AppointmentNotification & { doctorId?: string })[] = raw ? JSON.parse(raw) : [];
+    if (doctorId) {
+      return list.filter(n => !n.doctorId || n.doctorId === doctorId);
+    }
+    return list;
+  } catch { return []; }
+}
+
+export function markDoctorNotificationRead(id: string) {
+  try {
+    const raw = localStorage.getItem("doctorNotifications");
+    const list: AppointmentNotification[] = raw ? JSON.parse(raw) : [];
+    localStorage.setItem("doctorNotifications", JSON.stringify(list.map((n) => n.id === id ? { ...n, read: true } : n)));
   } catch { /* ignore */ }
 }

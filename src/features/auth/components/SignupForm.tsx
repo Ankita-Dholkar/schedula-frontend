@@ -363,21 +363,21 @@ export default function SignupForm() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="w-full max-w-[520px]">
-        {/* Brand */}
-        <div className="mb-6 flex items-center justify-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--brand)] shadow-sm">
-            <span className="text-[22px] font-serif font-semibold text-white">S</span>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-wide text-[var(--ink)]">SCHEDULA</h1>
-            <p className="mt-0.5 text-xs text-[var(--muted)]">Clinic Operations</p>
-          </div>
-        </div>
-
         <div className="rounded-2xl bg-white p-8 shadow-sm border border-[var(--line)]">
+          {/* Brand Logo */}
+          <div className="mb-10 flex items-center justify-center gap-3">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--brand)] shadow-sm">
+              <span className="text-[25px] font-serif font-semibold text-white">S</span>
+            </div>
+            <div>
+              <h1 className="text-[24px] font-bold tracking-wide text-[var(--ink)]">SCHEDULA</h1>
+              <p className="mt-0.5 text-[14px] font-normal text-[var(--muted)]">Clinic Operations</p>
+            </div>
+          </div>
+
           <div>
             <h2 className="text-[22px] font-semibold text-[var(--ink)]">Create an account</h2>
-            <p className="mt-1 text-sm text-[var(--muted)]">Join as a patient or a doctor.</p>
+            <p className="mt-1 text-[14px] text-[var(--muted)]">Join as a patient or a doctor.</p>
           </div>
 
           {/* Role Toggle */}

@@ -10,6 +10,7 @@ import { getAllAppointments, updateAppointmentStatus, getComputedAppointmentStat
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
 import DoctorPortalHeader from "@/features/doctor-portal/components/DoctorPortalHeader";
 import AppointmentDetailPanel from "@/features/doctor-portal/components/AppointmentDetailPanel";
+import RescheduleCalendarModal from "@/features/doctor-portal/components/RescheduleCalendarModal";
 
 type StoredUser = { id: string; name: string; email: string; role: string };
 
@@ -34,6 +35,7 @@ export default function DoctorDashboardPage() {
   const [doctorName, setDoctorName] = useState<string>("");
   const [myAppointments, setMyAppointments] = useState<Appointment[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
   const todayStr = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
@@ -184,7 +186,7 @@ export default function DoctorDashboardPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--line)] bg-[var(--canvas)]">
-                    {["Patient", "Date & Time", "Reason", "Room", "Duration", "Status", "Actions"].map((h) => (
+                    {["Patient", "Date & Time", "Type", "Mode", "Reason", "Duration", "Status", "Actions"].map((h) => (
                       <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                         {h}
                       </th>
@@ -212,8 +214,29 @@ export default function DoctorDashboardPage() {
                           <p className="font-medium text-[var(--ink)]">{formatTime(apt.startsAt)}</p>
                           <p className="text-xs">{formatDate(apt.startsAt)}</p>
                         </td>
+                        <td className="px-5 py-3.5">
+                          {apt.type ? (
+                            <span className="inline-flex rounded-md bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-200">
+                              {apt.type}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-[var(--muted)]">—</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          {apt.appointmentMode ? (
+                            <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+                              apt.appointmentMode === "online"
+                                ? "bg-violet-50 text-violet-700 ring-violet-200"
+                                : "bg-stone-50 text-stone-600 ring-stone-200"
+                            }`}>
+                              {apt.appointmentMode === "online" ? "Online" : "In-person"}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-[var(--muted)]">—</span>
+                          )}
+                        </td>
                         <td className="max-w-[160px] truncate px-5 py-3.5 text-[var(--muted)]">{apt.reason}</td>
-                        <td className="px-5 py-3.5 text-[var(--muted)]">{apt.room}</td>
                         <td className="px-5 py-3.5 text-[var(--muted)]">{apt.durationMinutes} min</td>
                         <td className="px-5 py-3.5">
                           <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${className}`}>
@@ -230,9 +253,9 @@ export default function DoctorDashboardPage() {
                               <User size={16} />
                             </button>
                             <button
-                              onClick={() => setSelectedAppointment(apt)}
+                              onClick={() => setIsCalendarModalOpen(true)}
                               className="rounded p-1.5 text-[var(--muted)] hover:bg-stone-100 hover:text-[var(--ink)] transition"
-                              title="View Appointment Schedule"
+                              title="Reschedule in Calendar"
                             >
                               <Calendar size={16} />
                             </button>
@@ -253,6 +276,17 @@ export default function DoctorDashboardPage() {
         onClose={() => setSelectedAppointment(null)}
         onRefresh={refreshAppointments}
       />
+      {isCalendarModalOpen && (
+        <RescheduleCalendarModal
+          appointments={myAppointments}
+          onClose={() => setIsCalendarModalOpen(false)}
+          onRefresh={refreshAppointments}
+          onSelectAppointment={(apt) => {
+            setSelectedAppointment(apt);
+            setIsCalendarModalOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }

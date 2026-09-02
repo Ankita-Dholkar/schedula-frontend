@@ -5,15 +5,14 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   CalendarCheck,
-  CalendarDays,
   User,
-  LogOut,
+  ClipboardList,
 } from "lucide-react";
 
 const navItems = [
   { label: "Dashboard",    href: "/doctor/dashboard",    icon: LayoutDashboard },
   { label: "Appointments", href: "/doctor/appointments", icon: CalendarCheck   },
-  { label: "Calendar",     href: "/doctor/calendar",     icon: CalendarDays    },
+  { label: "Prescriptions",href: "/doctor/prescriptions",icon: ClipboardList   },
   { label: "My Profile",   href: "/doctor/profile",      icon: User            },
 ];
 

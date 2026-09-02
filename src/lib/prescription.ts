@@ -1,4 +1,5 @@
 import type { Appointment } from "@/types/appointment";
+import { getPrescription } from "./mock-data/prescriptions";
 
 
 export function downloadPrescription(appointment: Appointment): void {
@@ -11,7 +12,11 @@ export function downloadPrescription(appointment: Appointment): void {
     year: "numeric",
   }).format(new Date(appointment.startsAt));
 
-  const prescription = getPrescriptionContent(appointment.id);
+  const prescription = getPrescription(appointment.id);
+  if (!prescription) {
+    alert("No prescription found for this appointment.");
+    return;
+  }
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -61,7 +66,7 @@ export function downloadPrescription(appointment: Appointment): void {
       <div class="info-item"><label>Age</label><span>${appointment.patient.age} years</span></div>
       <div class="info-item"><label>Date</label><span>${date}</span></div>
       <div class="info-item"><label>Appointment ID</label><span>${appointment.id}</span></div>
-      <div class="info-item"><label>Diagnosis</label><span>${appointment.reason}</span></div>
+      <div class="info-item"><label>Diagnosis</label><span>${prescription.diagnosis || appointment.reason}</span></div>
       <div class="info-item"><label>Type</label><span>${appointment.type ?? "Consultation"}</span></div>
     </div>
   </div>
@@ -74,7 +79,7 @@ export function downloadPrescription(appointment: Appointment): void {
       <div class="med-header">Rx — Medications</div>
       ${prescription.medications.map((med) => `
       <div class="med-item">
-        <div class="med-name">${med.name} ${med.strength}</div>
+        <div class="med-name">${med.name}</div>
         <div class="med-dosage">📋 ${med.dosage}</div>
         <div class="med-duration">⏱ Duration: ${med.duration} &nbsp;|&nbsp; ${med.instructions}</div>
       </div>`).join("")}
@@ -83,7 +88,7 @@ export function downloadPrescription(appointment: Appointment): void {
 
   <div class="section">
     <div class="section-title">Doctor's Notes</div>
-    <div class="notes">${prescription.notes}</div>
+    <div class="notes">${prescription.notes || "No additional notes provided."}</div>
   </div>
 
   <div class="footer">
@@ -109,44 +114,4 @@ export function downloadPrescription(appointment: Appointment): void {
   URL.revokeObjectURL(url);
 }
 
-// ── Per-appointment prescription content ──────────────────────────────────────
 
-type Medication = { name: string; strength: string; dosage: string; duration: string; instructions: string };
-type PrescriptionContent = { medications: Medication[]; notes: string };
-
-function getPrescriptionContent(appointmentId: string): PrescriptionContent {
-  const prescriptions: Record<string, PrescriptionContent> = {
-    "apt-1042": {
-      medications: [
-        { name: "Amoxicillin", strength: "500mg", dosage: "1 tablet, 3 times daily (after meals)", duration: "7 days", instructions: "Complete the full course" },
-        { name: "Paracetamol", strength: "650mg", dosage: "1 tablet if fever/pain, max 3/day", duration: "5 days", instructions: "Do not exceed recommended dose" },
-        { name: "Vitamin D3", strength: "60,000 IU", dosage: "1 sachet weekly", duration: "8 weeks", instructions: "Take with warm milk" },
-      ],
-      notes: "Patient presented with mild upper respiratory symptoms. Advised rest and adequate hydration. Follow-up in 7 days if symptoms persist. Avoid cold beverages and dusty environments.",
-    },
-    "apt-1046": {
-      medications: [
-        { name: "Metoprolol", strength: "25mg", dosage: "1 tablet, twice daily", duration: "30 days", instructions: "Take at the same time each day" },
-        { name: "Aspirin", strength: "75mg", dosage: "1 tablet, once daily (after breakfast)", duration: "Ongoing", instructions: "Do not skip doses" },
-        { name: "Atorvastatin", strength: "10mg", dosage: "1 tablet at bedtime", duration: "Ongoing", instructions: "Avoid grapefruit juice" },
-      ],
-      notes: "Cardiac evaluation completed. ECG within normal limits. Continue medications as prescribed. Low-salt diet recommended. Next review in 4 weeks.",
-    },
-    "apt-1048": {
-      medications: [
-        { name: "Sertraline", strength: "50mg", dosage: "1 tablet, once daily (morning)", duration: "30 days", instructions: "Do not discontinue abruptly" },
-        { name: "Alprazolam", strength: "0.25mg", dosage: "1 tablet at bedtime if required", duration: "14 days", instructions: "Avoid alcohol" },
-      ],
-      notes: "Therapy session completed. Patient shows good progress. Relaxation techniques and mindfulness exercises recommended. Next session in 2 weeks. Emergency contact provided.",
-    },
-  };
-
-  // Default prescription for any other appointment
-  return prescriptions[appointmentId] ?? {
-    medications: [
-      { name: "Ibuprofen", strength: "400mg", dosage: "1 tablet, twice daily (after meals)", duration: "5 days", instructions: "Take with food" },
-      { name: "Multivitamin Complex", strength: "—", dosage: "1 tablet, once daily", duration: "30 days", instructions: "Best taken in the morning" },
-    ],
-    notes: "General consultation completed. Patient advised to maintain a healthy diet, exercise regularly, and stay hydrated. Return if symptoms worsen.",
-  };
-}
