@@ -11,7 +11,7 @@ export interface ChatMessage {
 }
 
 export interface AssistantRequest {
-  role: Role;
+  role: Role | "general";
   pathname: string;
   question: string;
   history: Array<{ role: MessageRole; content: string }>;

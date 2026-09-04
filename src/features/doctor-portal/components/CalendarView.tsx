@@ -418,7 +418,7 @@ export default function CalendarView({
         <DnDCalendar
           localizer={localizer}
           events={allEvents}
-          view={view as Parameters<typeof DnDCalendar>[0]["view"]}
+          view={view as any}
           onView={(v) => setView(v)}
           date={date}
           onNavigate={setDate}
@@ -426,11 +426,11 @@ export default function CalendarView({
           step={30}
           timeslots={2}
           defaultView={Views.WEEK}
-          onEventDrop={onEventDrop as Parameters<typeof DnDCalendar>[0]["onEventDrop"]}
-          onEventResize={onEventResize as Parameters<typeof DnDCalendar>[0]["onEventResize"]}
+          onEventDrop={onEventDrop as any}
+          onEventResize={onEventResize as any}
           resizable
-          draggableAccessor={draggableAccessor as Parameters<typeof DnDCalendar>[0]["draggableAccessor"]}
-          eventPropGetter={eventStyleGetter as Parameters<typeof DnDCalendar>[0]["eventPropGetter"]}
+          draggableAccessor={draggableAccessor as any}
+          eventPropGetter={eventStyleGetter as any}
           onSelectEvent={(event) => {
             if (!(event as AnyEvent).isAvailabilitySlot && !(event as BookedSlotEvent).isBookedSlot) {
               onSelectEvent((event as CalEvent).resource);
@@ -438,7 +438,7 @@ export default function CalendarView({
           }}
           popup
           style={{ height: "100%", minHeight: "560px" }}
-          tooltipAccessor={tooltipAccessor as Parameters<typeof DnDCalendar>[0]["tooltipAccessor"]}
+          tooltipAccessor={tooltipAccessor as any}
         />
       </div>
     </div>
