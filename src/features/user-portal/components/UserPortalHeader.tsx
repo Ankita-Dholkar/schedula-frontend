@@ -56,7 +56,7 @@ export default function UserPortalHeader({ title }: Props) {
 
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   const handleMarkRead = (id: string, e: React.MouseEvent) => {
@@ -132,10 +132,10 @@ export default function UserPortalHeader({ title }: Props) {
           </span>
           <button
             onClick={handleLogout}
-            className="ml-1 rounded p-1.5 text-[var(--muted)] transition hover:bg-red-50 hover:text-red-600"
-            title="Log out"
+            className="ml-3 flex items-center gap-1.5 rounded-lg border border-[var(--line)] px-3 py-1.5 text-sm font-medium text-[var(--muted)] transition hover:bg-red-50 hover:text-red-600 hover:border-red-200"
           >
             <LogOut size={16} />
+            <span className="hidden sm:inline">Log Out</span>
           </button>
         </div>
       </div>

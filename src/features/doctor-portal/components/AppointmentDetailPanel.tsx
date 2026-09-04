@@ -4,10 +4,11 @@ import { useState } from "react";
 import { X, CalendarDays, Clock, Tag, MapPin, User } from "lucide-react";
 import type { Appointment } from "@/types/appointment";
 import { updateAppointmentStatus, getComputedAppointmentStatus, saveNotification } from "@/lib/mock-data/appointments";
-import RescheduleModal from "./RescheduleModal";
+import RescheduleCalendarModal from "./RescheduleCalendarModal";
 
 type Props = {
   appointment: Appointment | null;
+  appointments?: Appointment[];   // full list for conflict checks in the calendar
   onClose: () => void;
   onRefresh: () => void;
 };
@@ -27,7 +28,7 @@ const STATUS_STYLES: Record<string, string> = {
   missed:    "bg-red-100 text-red-800 ring-red-300",
 };
 
-export default function AppointmentDetailPanel({ appointment, onClose, onRefresh }: Props) {
+export default function AppointmentDetailPanel({ appointment, appointments = [], onClose, onRefresh }: Props) {
   const [showReschedule, setShowReschedule] = useState(false);
 
   if (!appointment) return null;
@@ -165,6 +166,9 @@ export default function AppointmentDetailPanel({ appointment, onClose, onRefresh
 
             {computedStatus === "confirmed" && (
               <>
+                <button onClick={() => setShowReschedule(true)} className="w-full rounded-lg border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] hover:bg-stone-50">
+                  Reschedule
+                </button>
                 <button onClick={() => handleStatusChange("completed")} className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">
                   Mark as Completed
                 </button>
@@ -183,12 +187,13 @@ export default function AppointmentDetailPanel({ appointment, onClose, onRefresh
         </div>
       </aside>
 
-      {/* Reschedule modal — rendered on top of the panel */}
+      {/* Reschedule Calendar — rendered on top of the panel */}
       {showReschedule && (
-        <RescheduleModal
-          appointment={appointment}
+        <RescheduleCalendarModal
+          appointments={appointments}
           onClose={() => setShowReschedule(false)}
-          onDone={handleRescheduleDone}
+          onRefresh={() => { handleRescheduleDone(); }}
+          onSelectAppointment={() => {}}
         />
       )}
     </>

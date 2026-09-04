@@ -36,7 +36,9 @@ export default function UserDoctorBookingPage() {
   const params = useParams();
   const router = useRouter();
   const doctorId = params.doctorId as string;
-  const today = new Date().toISOString().split("T")[0];
+  // Use local date (not UTC) to avoid timezone off-by-one-day bug
+  const toLocalDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const today = toLocalDateStr(new Date());
 
   const [availability, setAvailability] = useState<DoctorAvailability | null>(null);
   const [selectedDate, setSelectedDate] = useState(today);
@@ -72,7 +74,7 @@ export default function UserDoctorBookingPage() {
       .map((s) => s.date);
 
     if (activeDatesList.length > 0) {
-      const todayStr = new Date().toISOString().split("T")[0];
+      const todayStr = toLocalDateStr(new Date());
       const futureDates = activeDatesList.filter((d) => d >= todayStr).sort();
       setSelectedDate(futureDates.length > 0 ? futureDates[0] : activeDatesList[0]);
     }
@@ -227,7 +229,7 @@ export default function UserDoctorBookingPage() {
     );
   }
 
-  // ── Booking Page ────────────────────────────────────────────────────────────
+  // ── Booking Page ─
   return (
     <>
       <UserPortalHeader title="Book Appointment" />

@@ -19,7 +19,7 @@ const getRegisteredUsers = (): User[] => {
 
 export const login = async ({ emailOrMobile, password }: LoginCredentials) => {
 
-  await new Promise((resolve) => setTimeout(resolve, 800));
+
 
   // Check hardcoded mock users first, then runtime-registered users
   const allUsers: User[] = [...mockUsers, ...getRegisteredUsers()];

@@ -11,7 +11,7 @@ export const doctors: Doctor[] = [
     availability: "Available today",
     description: "Dr. Prakash Das practices about 7 years of experience in psychological therapy.",
     availableTime: "08:30 AM - 07:00 PM",
-    image: "/doctors/doctor1.png",
+    image: "/doctor-1.png",
   },
   {
     id: "doc-2",
@@ -21,7 +21,7 @@ export const doctors: Doctor[] = [
     availability: "Available today",
     description: "Experienced physician providing patient-focused, compassionate primary care.",
     availableTime: "09:00 AM - 06:00 PM",
-    image: "/doctors/doctor2.png",
+    image: "/doctor-2.png",
   },
   {
     id: "doc-3",
@@ -31,7 +31,7 @@ export const doctors: Doctor[] = [
     availability: "Available today",
     description: "Specialized in modern skin and dermatology treatments for all skin types.",
     availableTime: "10:00 AM - 05:00 PM",
-    image: "/doctors/doctor3.jpg",
+    image: "/doctor-3.png",
   },
   {
     id: "doc-4",
@@ -41,7 +41,7 @@ export const doctors: Doctor[] = [
     availability: "Available tomorrow",
     description: "Experienced cardiologist focused on heart health and preventive cardiology.",
     availableTime: "09:30 AM - 04:30 PM",
-    image: "/doctors/doctor4.jpg",
+    image: "/doctor-4.png",
   },
 ];
 

@@ -133,6 +133,17 @@ export default function DoctorProfilePage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (isLoaded && window.location.hash === "#availability") {
+      setTimeout(() => {
+        const el = document.getElementById("availability");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+    }
+  }, [isLoaded]);
+
   if (!isLoaded) {
     return (
       <>

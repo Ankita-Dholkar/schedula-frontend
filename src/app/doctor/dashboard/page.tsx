@@ -146,7 +146,7 @@ export default function DoctorDashboardPage() {
             {[
               { label: "My Profile",          href: "/doctor/profile",       icon: User          },
               { label: "All Appointments",    href: "/doctor/appointments",  icon: CalendarCheck },
-              { label: "Manage Availability", href: "/doctor/profile",       icon: Clock         },
+              { label: "Manage Availability", href: "/doctor/profile#availability",       icon: Clock         },
               { label: "Today's Schedule",    href: "/doctor/appointments",  icon: Calendar      },
             ].map(({ label, href, icon: Icon }) => (
               <Link
@@ -273,6 +273,7 @@ export default function DoctorDashboardPage() {
 
       <AppointmentDetailPanel
         appointment={selectedAppointment}
+        appointments={myAppointments}
         onClose={() => setSelectedAppointment(null)}
         onRefresh={refreshAppointments}
       />

@@ -53,12 +53,8 @@ export default function LoginForm() {
       });
 
       setTimeout(() => {
-        if (user.role === "doctor") {
-          window.location.href = "/doctor/dashboard";
-        } else {
-          window.location.href = "/user/doctors";
-        }
-      }, 1500);
+        window.location.href = "/";
+      }, 100);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Login failed. Please try again.";
       setErrors((prev) => ({ ...prev, password: message }));
