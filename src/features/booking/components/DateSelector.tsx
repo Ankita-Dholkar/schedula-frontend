@@ -14,7 +14,7 @@ function generateDates(activeDates: string[]) {
   for (let i = 0; i < 14; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
-    const value = d.toISOString().split("T")[0]; // "YYYY-MM-DD"
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;  // local date, not UTC
 
     // If activeDates provided, only show dates the doctor works
     if (activeDates.length > 0 && !activeDates.includes(value)) continue;

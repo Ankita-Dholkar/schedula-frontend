@@ -27,6 +27,7 @@ type CalEvent = {
   end: Date;
   resource: Appointment;
   isAvailabilitySlot?: false;
+  isBookedSlot?: false;
 };
 
 type AvailEvent = {
@@ -35,9 +36,19 @@ type AvailEvent = {
   start: Date;
   end: Date;
   isAvailabilitySlot: true;
+  isBookedSlot?: false;
 };
 
-type AnyEvent = CalEvent | AvailEvent;
+type BookedSlotEvent = {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  isAvailabilitySlot?: false;
+  isBookedSlot: true;
+};
+
+type AnyEvent = CalEvent | AvailEvent | BookedSlotEvent;
 
 type Props = {
   appointments: Appointment[];
@@ -52,36 +63,40 @@ type Props = {
 /** Only upcoming (confirmed + future) and pending can be dragged */
 function isDraggable(apt: Appointment): boolean {
   const cs = getComputedAppointmentStatus(apt);
-  return cs === "pending" || cs === "upcoming";
+  return cs === "pending" || cs === "upcoming" || cs === "confirmed";
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending:   "#f59e0b",
-  upcoming:  "#3b82f6",
+  pending: "#f59e0b",
+  upcoming: "#3b82f6",
   confirmed: "#10b981",
   completed: "#6b7280",
   cancelled: "#9ca3af",
-  missed:    "#ef4444",
+  missed: "#ef4444",
 };
 
 // ─── Availability overlay helpers ─────────────────────────────────────────────
 
-function buildAvailabilityEvents(avail: DoctorAvailability | null): AvailEvent[] {
+function buildAvailabilityEvents(avail: DoctorAvailability | null): (AvailEvent | BookedSlotEvent)[] {
   if (!avail || !avail.schedule) return [];
-  const events: AvailEvent[] = [];
+  const events: (AvailEvent | BookedSlotEvent)[] = [];
 
   avail.schedule.forEach((dateSchedule) => {
     if (!dateSchedule.isActive || !dateSchedule.slots?.length) return;
     dateSchedule.slots.forEach((slot) => {
-      if (slot.isBooked) return; // already occupied — skip
+      if (slot.isBooked) return; // Skip booked slots so they don't show on calendar
+
       const [sh, sm] = slot.start.split(":").map(Number);
       const [eh, em] = slot.end.split(":").map(Number);
       const [y, mo, d] = dateSchedule.date.split("-").map(Number);
+      const slotStart = new Date(y, mo - 1, d, sh, sm, 0);
+      const slotEnd = new Date(y, mo - 1, d, eh, em, 0);
+
       events.push({
         id: `avail-${slot.id}`,
         title: "Available",
-        start: new Date(y, mo - 1, d, sh, sm, 0),
-        end:   new Date(y, mo - 1, d, eh, em, 0),
+        start: slotStart,
+        end: slotEnd,
         isAvailabilitySlot: true,
       });
     });
@@ -91,31 +106,33 @@ function buildAvailabilityEvents(avail: DoctorAvailability | null): AvailEvent[]
 }
 
 /**
- * Returns true when the given [newStart, newEnd) interval falls entirely within
- * at least one available slot in the doctor's schedule.
+ * Returns true when the given newStart falls within at least one AVAILABLE (unbooked)
+ * slot in the doctor's schedule, and the slot has not passed.
  */
-function isWithinAvailability(
+function isWithinAvailableSlot(
   avail: DoctorAvailability | null,
   newStart: Date,
-  durationMinutes: number
+  _durationMinutes: number
 ): boolean {
-  if (!avail || !avail.schedule) return true; // no schedule configured → allow (open schedule)
+  if (!avail || !avail.schedule || avail.schedule.length === 0) return true; // open schedule
 
-  const newEnd = new Date(newStart.getTime() + durationMinutes * 60_000);
   const dateStr = moment(newStart).format("YYYY-MM-DD");
   const dateSchedule = avail.schedule.find((s) => s.date === dateStr);
 
+  // If no schedule configured for that date, allow freely (no restriction)
   if (!dateSchedule || !dateSchedule.isActive || !dateSchedule.slots?.length) return false;
 
+  const dropHHMM = newStart.getHours() * 60 + newStart.getMinutes();
+
+  // Check if the drop time falls inside ANY unbooked slot on that date
   return dateSchedule.slots.some((slot) => {
+    if (slot.isBooked) return false;
     const [sh, sm] = slot.start.split(":").map(Number);
     const [eh, em] = slot.end.split(":").map(Number);
-    const slotStart = new Date(newStart);
-    slotStart.setHours(sh, sm, 0, 0);
-    const slotEnd = new Date(newStart);
-    slotEnd.setHours(eh, em, 0, 0);
-    // The appointment window must fit entirely inside the slot
-    return newStart >= slotStart && newEnd <= slotEnd;
+    const slotStartMin = sh * 60 + sm;
+    const slotEndMin = eh * 60 + em;
+    // Drop point must land at or after slot start and before slot end
+    return dropHHMM >= slotStartMin && dropHHMM < slotEndMin;
   });
 }
 
@@ -151,7 +168,7 @@ export default function CalendarView({
     }
   }, [doctorId]);
 
-  // Convert appointments → calendar events
+  // Convert appointments → calendar events (show all statuses)
   const appointmentEvents = useMemo<CalEvent[]>(
     () =>
       appointments.map((apt) => ({
@@ -161,12 +178,13 @@ export default function CalendarView({
         end: new Date(new Date(apt.startsAt).getTime() + apt.durationMinutes * 60_000),
         resource: apt,
         isAvailabilitySlot: false as const,
+        isBookedSlot: false as const,
       })),
     [appointments]
   );
 
-  // Build availability overlay events
-  const availabilityEvents = useMemo<AvailEvent[]>(
+  // Build availability overlay events (both available and booked slots)
+  const availabilityEvents = useMemo(
     () => buildAvailabilityEvents(availability),
     [availability]
   );
@@ -186,34 +204,35 @@ export default function CalendarView({
       start: Date | string;
       end: Date | string;
     }) => {
-      // Availability slots can't be dragged
-      if ((event as AnyEvent).isAvailabilitySlot) return;
+      // Availability / booked slots can't be dragged
+      if ((event as AnyEvent).isAvailabilitySlot || (event as AnyEvent).isBookedSlot) return;
 
       const calEvent = event as CalEvent;
       const apt = calEvent.resource;
 
-      // Guard: only pending / upcoming can be rescheduled
+      // Guard: only pending / upcoming / confirmed can be rescheduled
       if (!isDraggable(apt)) {
         onToast(
-          "Only pending or upcoming appointments can be rescheduled.",
+          "Only pending, upcoming, or confirmed appointments can be rescheduled.",
           "error"
         );
         return;
       }
 
       const newStart = new Date(start);
+      const now = new Date();
 
-      // Guard: must be a future time
-      if (newStart.getTime() <= Date.now()) {
-        onToast("Cannot reschedule to a past time.", "error");
+      // Guard: slot start time must not have passed yet
+      if (newStart.getTime() < now.getTime()) {
+        onToast("Cannot reschedule to a time that has already passed.", "error");
         return;
       }
 
-      // Guard: must fall within an available slot (if the doctor has set availability)
+      // Guard: must fall within an available (unbooked) slot
       if (availability && availability.schedule.length > 0) {
-        if (!isWithinAvailability(availability, newStart, apt.durationMinutes)) {
+        if (!isWithinAvailableSlot(availability, newStart, apt.durationMinutes)) {
           onToast(
-            "The selected time is outside your available slots. Please choose an available slot.",
+            "The selected time is outside your available slots or the slot is already booked. Please drop onto a green dashed slot.",
             "error"
           );
           return;
@@ -268,7 +287,7 @@ export default function CalendarView({
       start: Date | string;
       end: Date | string;
     }) => {
-      if ((event as AnyEvent).isAvailabilitySlot) return;
+      if ((event as AnyEvent).isAvailabilitySlot || (event as AnyEvent).isBookedSlot) return;
       const calEvent = event as CalEvent;
       const apt = calEvent.resource;
       if (!isDraggable(apt)) {
@@ -284,7 +303,23 @@ export default function CalendarView({
 
   // ── Per-event styling ─────────────────────────────────────────────────────
   const eventStyleGetter = useCallback((event: AnyEvent) => {
-    // Availability background slots
+    // Booked slots — subtle red/rose overlay
+    if ((event as BookedSlotEvent).isBookedSlot) {
+      return {
+        style: {
+          backgroundColor: "rgba(239,68,68,0.07)",
+          border: "1.5px dashed #ef4444",
+          color: "#dc2626",
+          borderRadius: "6px",
+          fontSize: "11px",
+          fontWeight: 500,
+          cursor: "default",
+          pointerEvents: "none" as const,
+        },
+      };
+    }
+
+    // Availability background slots — green dashed
     if (event.isAvailabilitySlot) {
       return {
         style: {
@@ -319,31 +354,29 @@ export default function CalendarView({
     };
   }, []);
 
-  // ── draggableAccessor — availability events are not draggable ─────────────
+  // ── draggableAccessor — only appointment events are draggable ─────────────
   const draggableAccessor = useCallback(
     (event: AnyEvent) =>
-      !event.isAvailabilitySlot && isDraggable((event as CalEvent).resource),
+      !event.isAvailabilitySlot &&
+      !(event as BookedSlotEvent).isBookedSlot &&
+      isDraggable((event as CalEvent).resource),
     []
   );
 
   // ── Tooltip ───────────────────────────────────────────────────────────────
   const tooltipAccessor = useCallback((event: AnyEvent) => {
-    if (event.isAvailabilitySlot) return "Available slot";
+    if (event.isAvailabilitySlot) return "Available slot — drop appointment here";
     const apt = (event as CalEvent).resource;
     const cs = getComputedAppointmentStatus(apt);
     const draggable = isDraggable(apt);
-    return `${apt.patient.name} · ${apt.reason} · ${cs}${
-      !draggable ? " (read-only)" : " — drag to reschedule"
-    }`;
+    return `${apt.patient.name} · ${apt.reason} · ${cs}${!draggable ? " (read-only)" : " — drag to any available green slot"
+      }`;
   }, []);
 
-  // ── Legend items ──────────────────────────────────────────────────────────
+  // ── Legend items — only relevant statuses shown ───────────────────────────
   const legendItems = [
-    ...Object.entries(STATUS_COLORS).map(([status, color]) => ({
-      label: status.charAt(0).toUpperCase() + status.slice(1),
-      color,
-      dashed: false,
-    })),
+    { label: "Upcoming", color: STATUS_COLORS.upcoming, dashed: false },
+    { label: "Confirmed", color: STATUS_COLORS.confirmed, dashed: false },
     { label: "Available Slot", color: "#10b981", dashed: true },
   ];
 
@@ -366,7 +399,9 @@ export default function CalendarView({
             {label}
           </span>
         ))}
-
+        <span className="ml-auto text-xs text-[var(--muted)]">
+          Drag <strong>pending/upcoming/confirmed</strong> appointments onto any green slot (any day)
+        </span>
       </div>
 
       {/* Calendar */}
@@ -397,7 +432,7 @@ export default function CalendarView({
           draggableAccessor={draggableAccessor as Parameters<typeof DnDCalendar>[0]["draggableAccessor"]}
           eventPropGetter={eventStyleGetter as Parameters<typeof DnDCalendar>[0]["eventPropGetter"]}
           onSelectEvent={(event) => {
-            if (!(event as AnyEvent).isAvailabilitySlot) {
+            if (!(event as AnyEvent).isAvailabilitySlot && !(event as BookedSlotEvent).isBookedSlot) {
               onSelectEvent((event as CalEvent).resource);
             }
           }}

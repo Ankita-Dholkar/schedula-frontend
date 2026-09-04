@@ -85,7 +85,7 @@ export default function DoctorPortalHeader({ title }: { title: string }) {
 
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   return (
@@ -162,11 +162,10 @@ export default function DoctorPortalHeader({ title }: { title: string }) {
         <button
           type="button"
           onClick={handleLogout}
-          title="Log out"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--muted)] transition hover:bg-red-50 hover:text-red-500"
-          aria-label="Log out"
+          className="ml-2 flex items-center gap-1.5 rounded-lg border border-[var(--line)] px-3 py-1.5 text-sm font-medium text-[var(--muted)] transition hover:bg-red-50 hover:text-red-600 hover:border-red-200"
         >
-          <LogOut size={18} />
+          <LogOut size={16} />
+          <span className="hidden sm:inline">Log Out</span>
         </button>
       </div>
     </header>

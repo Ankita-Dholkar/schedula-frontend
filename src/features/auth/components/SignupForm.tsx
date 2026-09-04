@@ -174,7 +174,7 @@ export default function SignupForm() {
       setToast({ message: "Account created! Redirecting to login…", type: "success" });
       setTimeout(() => {
         window.location.href = `/login?email=${encodeURIComponent(user.email)}`;
-      }, 1800);
+      }, 100);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Signup failed. Please try again.";
       setToast({ message, type: "error" });
@@ -192,7 +192,7 @@ export default function SignupForm() {
       setToast({ message: "Account created! Redirecting to login…", type: "success" });
       setTimeout(() => {
         window.location.href = `/login?email=${encodeURIComponent(user.email)}`;
-      }, 1800);
+      }, 100);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Signup failed. Please try again.";
       setToast({ message, type: "error" });

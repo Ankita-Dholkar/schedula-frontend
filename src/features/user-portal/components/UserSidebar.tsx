@@ -15,7 +15,7 @@ export default function UserSidebar() {
 
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   return (

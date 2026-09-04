@@ -277,6 +277,7 @@ export default function DoctorAppointmentsPage() {
 
       <AppointmentDetailPanel
         appointment={selectedAppointment}
+        appointments={myAppointments}
         onClose={() => { setSelectedAppointment(null); refreshAppointments(); }}
         onRefresh={refreshAppointments}
       />

@@ -39,8 +39,7 @@ const seedDoctorAvailability = (doctorId: string) => {
 };
 
 export const signup = async (userData: Omit<User, "id"> & Record<string, unknown>) => {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 900));
+
 
   // Check both hardcoded + already registered users for duplicates
   const allUsers: User[] = [...mockUsers, ...getRegisteredUsers()];

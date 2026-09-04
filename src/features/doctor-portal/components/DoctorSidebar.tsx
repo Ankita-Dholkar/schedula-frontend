@@ -7,6 +7,7 @@ import {
   CalendarCheck,
   User,
   ClipboardList,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -21,7 +22,7 @@ export default function DoctorSidebar() {
 
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   return (
@@ -58,6 +59,17 @@ export default function DoctorSidebar() {
           );
         })}
       </nav>
+
+      {/* Logout */}
+      <div className="border-t border-white/15 px-3 py-4">
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 transition-all hover:bg-white/10 hover:text-white"
+        >
+          <LogOut size={18} strokeWidth={1.8} />
+          Log Out
+        </button>
+      </div>
     </aside>
   );
 }

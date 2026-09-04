@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, CalendarDays, Clock } from "lucide-react";
 import type { Appointment } from "@/types/appointment";
 import { rescheduleAppointment, saveNotification } from "@/lib/mock-data/appointments";
+import { loadPersistedAvailability } from "@/lib/mock-data/availability";
+import type { DoctorAvailability } from "@/types/availability";
 
 type Props = {
   appointment: Appointment;
@@ -14,20 +16,25 @@ type Props = {
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat("en", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(iso));
 
-// Generate 30-min slots from 09:00 to 17:00
-function generateTimeSlots() {
-  const slots: string[] = [];
-  let h = 9;
-  let m = 0;
-  while (h < 17 || (h === 17 && m === 0)) {
-    slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-    m += 30;
-    if (m >= 60) { h++; m = 0; }
-  }
-  return slots;
-}
+/** Get available (unbooked, future) slots for a given date from persisted availability */
+function getSlotsForDate(avail: DoctorAvailability | null, dateStr: string): string[] {
+  if (!avail || !avail.schedule) return [];
+  const schedule = avail.schedule.find((s) => s.date === dateStr);
+  if (!schedule || !schedule.isActive || !schedule.slots?.length) return [];
 
-const TIME_SLOTS = generateTimeSlots();
+  const now = new Date();
+  return schedule.slots
+    .filter((slot) => {
+      if (slot.isBooked) return false;
+      // Only show future slots
+      const [sh, sm] = slot.start.split(":").map(Number);
+      const [y, mo, d] = dateStr.split("-").map(Number);
+      const slotTime = new Date(y, mo - 1, d, sh, sm, 0);
+      return slotTime > now;
+    })
+    .map((slot) => slot.start)
+    .sort();
+}
 
 export default function RescheduleModal({ appointment, onClose, onDone }: Props) {
   const today = new Date().toISOString().split("T")[0];
@@ -35,6 +42,21 @@ export default function RescheduleModal({ appointment, onClose, onDone }: Props)
   const [selectedTime, setSelectedTime] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [availability, setAvailability] = useState<DoctorAvailability | null>(null);
+
+  // Load doctor's availability from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("loggedInUser");
+      if (!raw) return;
+      const user = JSON.parse(raw);
+      const avail = loadPersistedAvailability(user.id);
+      setAvailability(avail);
+    } catch { /* ignore */ }
+  }, []);
+
+  const availableSlots = getSlotsForDate(availability, selectedDate);
+  const hasAvailability = availability && availability.schedule.length > 0;
 
   const handleConfirm = async () => {
     if (!selectedTime) { setError("Please select a time slot."); return; }
@@ -57,8 +79,9 @@ export default function RescheduleModal({ appointment, onClose, onDone }: Props)
 
   return (
     <>
-      <div className="fixed inset-0 z-60 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed left-1/2 top-1/2 z-70 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--line)] bg-white p-6 shadow-2xl">
+      <div className="fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed left-1/2 top-1/2 z-[70] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--line)] bg-white p-6 shadow-2xl">
+        {/* Header */}
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-[var(--ink)]">Reschedule Appointment</h3>
           <button onClick={onClose} className="rounded-full p-1 text-[var(--muted)] hover:bg-stone-100">
@@ -92,22 +115,61 @@ export default function RescheduleModal({ appointment, onClose, onDone }: Props)
           <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
             <Clock size={13} /> Select Time Slot
           </label>
-          <div className="grid grid-cols-4 gap-2">
-            {TIME_SLOTS.map((slot) => (
-              <button
-                key={slot}
-                type="button"
-                onClick={() => setSelectedTime(slot)}
-                className={`rounded-lg border py-2 text-xs font-medium transition ${
-                  selectedTime === slot
-                    ? "border-[var(--brand)] bg-[var(--brand)] text-white"
-                    : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
-                }`}
-              >
-                {slot}
-              </button>
-            ))}
-          </div>
+
+          {hasAvailability ? (
+            availableSlots.length > 0 ? (
+              <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-0.5">
+                {availableSlots.map((slot) => (
+                  <button
+                    key={slot}
+                    type="button"
+                    onClick={() => setSelectedTime(slot)}
+                    className={`rounded-lg border py-2 text-xs font-medium transition ${
+                      selectedTime === slot
+                        ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                        : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                    }`}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 px-4 py-4 text-center">
+                <p className="text-sm font-medium text-amber-700">No available slots on this date</p>
+                <p className="mt-1 text-xs text-amber-600">Please select a different date or update your availability schedule.</p>
+              </div>
+            )
+          ) : (
+            // No availability configured — show open time grid
+            <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+              {Array.from({ length: 17 }, (_, i) => {
+                const h = 9 + Math.floor(i / 2);
+                const m = i % 2 === 0 ? "00" : "30";
+                return `${String(h).padStart(2, "0")}:${m}`;
+              }).filter((slot) => {
+                // For today, hide past slots
+                if (selectedDate !== today) return true;
+                const [sh, sm] = slot.split(":").map(Number);
+                const now = new Date();
+                return sh > now.getHours() || (sh === now.getHours() && sm > now.getMinutes());
+              }).map((slot) => (
+                <button
+                  key={slot}
+                  type="button"
+                  onClick={() => setSelectedTime(slot)}
+                  className={`rounded-lg border py-2 text-xs font-medium transition ${
+                    selectedTime === slot
+                      ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                      : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                  }`}
+                >
+                  {slot}
+                </button>
+              ))}
+            </div>
+          )}
+
           {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
         </div>
 
@@ -120,7 +182,7 @@ export default function RescheduleModal({ appointment, onClose, onDone }: Props)
           </button>
           <button
             onClick={handleConfirm}
-            disabled={isSaving}
+            disabled={isSaving || !selectedTime}
             className="flex-1 rounded-lg bg-[var(--brand)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--brand-deep)] disabled:opacity-60"
           >
             {isSaving ? "Saving…" : "Confirm Reschedule"}

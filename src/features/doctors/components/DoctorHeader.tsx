@@ -9,19 +9,18 @@ export default function DoctorHeader() {
   const router = useRouter();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("loggedInUser");
-
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-
-        if (user?.name) {
-          setUserName(user.name);
+    function init() {
+      const storedUser = localStorage.getItem("loggedInUser");
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          if (user?.name) setUserName(user.name);
+        } catch (error) {
+          console.error("Failed to parse user data", error);
         }
-      } catch (error) {
-        console.error("Failed to parse user data", error);
       }
     }
+    init();
   }, []);
 
   const handleLogout = () => {

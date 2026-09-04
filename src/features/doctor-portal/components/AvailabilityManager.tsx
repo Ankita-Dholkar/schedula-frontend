@@ -31,7 +31,8 @@ export default function AvailabilityManager({ doctorId, initialAvailability }: P
     sanitize(initialAvailability)
   );
   
-  const today = new Date().toISOString().split("T")[0];
+  // Use local date (not UTC) to avoid timezone off-by-one-day
+  const today = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
   const [selectedDate, setSelectedDate] = useState<string>(today);
   const [newSlotTime, setNewSlotTime] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -149,7 +150,7 @@ export default function AvailabilityManager({ doctorId, initialAvailability }: P
   const totalSlots = activeDays.reduce((acc, d) => acc + d.slots.length, 0);
 
   return (
-    <section className="rounded-xl border border-[var(--line)] bg-white p-6">
+    <section id="availability" className="rounded-xl border border-[var(--line)] bg-white p-6">
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
