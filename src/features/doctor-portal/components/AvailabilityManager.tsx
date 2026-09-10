@@ -5,6 +5,8 @@ import { Plus, Trash2, Clock, RotateCcw } from "lucide-react";
 import type { DoctorAvailability, DateSchedule } from "@/types/availability";
 import { generateSlots, saveDoctorAvailability } from "@/lib/mock-data/availability";
 import Toast from "@/features/auth/components/Toast";
+import { useAppDispatch } from "@/store/hooks";
+import { updateActiveDoctorAvailability } from "@/store/slices/availabilitySlice";
 
 type Props = {
   doctorId: string;
@@ -14,6 +16,7 @@ type Props = {
 const DURATIONS = [15, 30, 45, 60] as const;
 
 export default function AvailabilityManager({ doctorId, initialAvailability }: Props) {
+  const dispatch = useAppDispatch();
   // Migrate old 'day'-keyed data to new 'date'-keyed format by starting fresh
   const sanitize = (avail: DoctorAvailability): DoctorAvailability => {
     const hasOldFormat = avail.schedule.some(
@@ -141,7 +144,7 @@ export default function AvailabilityManager({ doctorId, initialAvailability }: P
   const handleSave = async () => {
     setIsSaving(true);
     await new Promise((r) => setTimeout(r, 600));
-    saveDoctorAvailability(availability);
+    dispatch(updateActiveDoctorAvailability(availability));
     setIsSaving(false);
     setToast({ message: "Availability saved successfully!", type: "success" });
   };

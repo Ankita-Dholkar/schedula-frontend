@@ -15,8 +15,8 @@ import {
   X,
   LogOut,
 } from "lucide-react";
-
-type AuthUser = { name: string; role: "patient" | "doctor" } | null;
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { logout } from "@/store/slices/authSlice";
 
 /* ── FAQ data ── */
 const faqs = [
@@ -105,21 +105,22 @@ const testimonials = [
 ];
 
 export default function HomePage() {
-  const [user, setUser] = useState<AuthUser>(null);
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("loggedInUser");
-      if (raw) setUser(JSON.parse(raw));
-    } catch { /* ignore */ }
-
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    window.location.href = "/";
+  };
 
   /* route helpers */
   const patientHref = (fallback: string) =>
@@ -195,7 +196,7 @@ export default function HomePage() {
                     Patient Portal
                   </Link>
                   <button
-                    onClick={() => { localStorage.removeItem("loggedInUser"); window.location.href = "/"; }}
+                    onClick={handleLogout}
                     className="flex items-center gap-1.5 rounded-lg border border-[var(--line)] px-3 py-2 text-sm font-medium text-[var(--muted)] transition hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                     title="Log Out"
                   >
@@ -212,7 +213,7 @@ export default function HomePage() {
                     Manage my Clinic
                   </Link>
                   <button
-                    onClick={() => { localStorage.removeItem("loggedInUser"); window.location.href = "/"; }}
+                    onClick={handleLogout}
                     className="flex items-center gap-1.5 rounded-lg border border-[var(--line)] px-3 py-2 text-sm font-medium text-[var(--muted)] transition hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                     title="Log Out"
                   >
@@ -274,7 +275,7 @@ export default function HomePage() {
                         Patient Portal
                       </Link>
                       <button
-                        onClick={() => { localStorage.removeItem("loggedInUser"); window.location.href = "/"; }}
+                        onClick={handleLogout}
                         className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--muted)] transition hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                       >
                         <LogOut size={16} />
@@ -288,7 +289,7 @@ export default function HomePage() {
                         Manage my Clinic
                       </Link>
                       <button
-                        onClick={() => { localStorage.removeItem("loggedInUser"); window.location.href = "/"; }}
+                        onClick={handleLogout}
                         className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--muted)] transition hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                       >
                         <LogOut size={16} />

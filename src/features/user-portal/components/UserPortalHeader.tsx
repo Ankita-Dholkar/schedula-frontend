@@ -2,17 +2,13 @@
 
 import { useEffect, useState, useRef } from "react";
 import { LogOut, Bell, Check } from "lucide-react";
-import {
-  getNotifications,
-  markNotificationRead,
-  type AppointmentNotification,
-} from "@/lib/mock-data/appointments";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { logout } from "@/store/slices/authSlice";
+import { readUserNotification } from "@/store/slices/appointmentsSlice";
 
 type Props = {
   title: string;
 };
-
-type StoredUser = { id: string; name: string; email: string; role: string };
 
 const timeAgo = (dateString: string) => {
   const diff = Date.now() - new Date(dateString).getTime();
@@ -24,24 +20,15 @@ const timeAgo = (dateString: string) => {
 };
 
 export default function UserPortalHeader({ title }: Props) {
-  const [userName, setUserName] = useState<string>("");
-  const [notifications, setNotifications] = useState<AppointmentNotification[]>([]);
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
+  const notifications = useAppSelector(
+    (state) => state.appointments.userNotifications
+  );
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const loadNotifs = () => {
-    setNotifications(getNotifications().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-  };
-
-  useEffect(() => {
-    const stored = localStorage.getItem("loggedInUser");
-    if (stored) {
-      setUserName(JSON.parse(stored).name);
-    }
-    loadNotifs();
-    window.addEventListener("focus", loadNotifs);
-    return () => window.removeEventListener("focus", loadNotifs);
-  }, []);
+  const userName = user?.name ?? "User";
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -55,14 +42,13 @@ export default function UserPortalHeader({ title }: Props) {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("loggedInUser");
+    dispatch(logout());
     window.location.href = "/";
   };
 
   const handleMarkRead = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    markNotificationRead(id);
-    loadNotifs();
+    dispatch(readUserNotification(id));
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;

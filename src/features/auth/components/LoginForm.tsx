@@ -5,8 +5,12 @@ import { FormEvent, useState, useEffect } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import Toast from "@/features/auth/components/Toast";
+import { useAppDispatch } from "@/store/hooks";
+import { setAuthUser } from "@/store/slices/authSlice";
+import type { User } from "@/types/user";
 
 export default function LoginForm() {
+  const dispatch = useAppDispatch();
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [emailOrMobile, setEmailOrMobile] = useState("");
@@ -45,7 +49,7 @@ export default function LoginForm() {
     setIsLoading(true);
     try {
       const user = await login({ emailOrMobile, password });
-      localStorage.setItem("loggedInUser", JSON.stringify(user));
+      dispatch(setAuthUser(user as User));
 
       setToast({
         message: `Welcome back, ${user.name}! Redirecting you now...`,
@@ -53,7 +57,7 @@ export default function LoginForm() {
       });
 
       setTimeout(() => {
-        window.location.href = "/";
+        window.location.href = user.role === "doctor" ? "/doctor/dashboard" : "/user/doctors";
       }, 100);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Login failed. Please try again.";
