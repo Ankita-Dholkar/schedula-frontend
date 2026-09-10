@@ -10,6 +10,7 @@ export type Prescription = {
   doctorId: string;
   patientId: string;
   diagnosis: string;
+  diagnosisType?: "acute" | "chronic";
   medications: Medication[];
   notes: string;
   createdAt: string;

@@ -33,6 +33,7 @@ export default function PrescriptionEditor({
   onSaved,
 }: Props) {
   const [diagnosis, setDiagnosis] = useState(existingPrescription?.diagnosis || "");
+  const [diagnosisType, setDiagnosisType] = useState<"acute" | "chronic" | undefined>(existingPrescription?.diagnosisType);
   const [notes, setNotes] = useState(existingPrescription?.notes || "");
   const [medications, setMedications] = useState<Medication[]>(
     existingPrescription?.medications?.length ? existingPrescription.medications : [{ ...emptyMedication }]
@@ -73,6 +74,7 @@ export default function PrescriptionEditor({
       doctorId,
       patientId,
       diagnosis,
+      diagnosisType,
       medications,
       notes,
       createdAt: existingPrescription?.createdAt || new Date().toISOString(),
@@ -131,8 +133,41 @@ export default function PrescriptionEditor({
             value={diagnosis}
             onChange={(e) => setDiagnosis(e.target.value)}
             placeholder="e.g. Acute Bronchitis"
-            className="w-full rounded-lg border border-[var(--line)] bg-white px-4 py-2.5 text-sm text-[var(--ink)] outline-none focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
+            className="w-full rounded-lg border border-[var(--line)] bg-white px-4 py-2.5 text-sm text-[var(--ink)] outline-none focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)] mb-4"
           />
+          <label className="block text-sm font-semibold text-[var(--ink)] mb-2">Diagnosis Type</label>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 text-sm text-[var(--ink)] cursor-pointer">
+              <input
+                type="radio"
+                name="diagnosisType"
+                checked={diagnosisType === "acute"}
+                onChange={() => setDiagnosisType("acute")}
+                className="text-[var(--brand)] focus:ring-[var(--brand)]"
+              />
+              Acute
+            </label>
+            <label className="flex items-center gap-2 text-sm text-[var(--ink)] cursor-pointer">
+              <input
+                type="radio"
+                name="diagnosisType"
+                checked={diagnosisType === "chronic"}
+                onChange={() => setDiagnosisType("chronic")}
+                className="text-[var(--brand)] focus:ring-[var(--brand)]"
+              />
+              Chronic (Ongoing)
+            </label>
+            <label className="flex items-center gap-2 text-sm text-[var(--ink)] cursor-pointer">
+              <input
+                type="radio"
+                name="diagnosisType"
+                checked={!diagnosisType}
+                onChange={() => setDiagnosisType(undefined)}
+                className="text-[var(--brand)] focus:ring-[var(--brand)]"
+              />
+              Not specified
+            </label>
+          </div>
         </div>
 
         {/* Medications */}
