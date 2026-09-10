@@ -2,13 +2,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Bell, LogOut, Check } from "lucide-react";
-import {
-  getDoctorNotifications,
-  markDoctorNotificationRead,
-  type AppointmentNotification,
-} from "@/lib/mock-data/appointments";
-
-type StoredUser = { id: string; name: string; email: string; role: string };
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { logout } from "@/store/slices/authSlice";
+import { readDoctorNotification } from "@/store/slices/appointmentsSlice";
 
 const timeAgo = (dateString: string) => {
   const diff = Date.now() - new Date(dateString).getTime();
@@ -20,42 +16,13 @@ const timeAgo = (dateString: string) => {
 };
 
 export default function DoctorPortalHeader({ title }: { title: string }) {
-  const [user, setUser] = useState<StoredUser | null>(null);
-  const [notifications, setNotifications] = useState<AppointmentNotification[]>([]);
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
+  const notifications = useAppSelector(
+    (state) => state.appointments.doctorNotifications
+  );
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const loadNotifs = () => {
-    setNotifications(getDoctorNotifications().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-  };
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("loggedInUser");
-      if (stored) setUser(JSON.parse(stored));
-    } catch {
-      // ignore
-    }
-    loadNotifs();
-
-    // 1. Sync on window focus
-    window.addEventListener("focus", loadNotifs);
-    
-    // 2. Sync across tabs
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === "doctorNotifications") loadNotifs();
-    };
-    window.addEventListener("storage", handleStorage);
-
-    // 3. Fallback polling for same-tab updates
-    const intervalId = setInterval(loadNotifs, 3000);
-
-    return () => {
-      window.removeEventListener("focus", loadNotifs);
-      window.removeEventListener("storage", handleStorage);
-      clearInterval(intervalId);
-    };
-  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -70,8 +37,7 @@ export default function DoctorPortalHeader({ title }: { title: string }) {
 
   const handleMarkRead = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    markDoctorNotificationRead(id);
-    loadNotifs();
+    dispatch(readDoctorNotification(id));
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -84,7 +50,7 @@ export default function DoctorPortalHeader({ title }: { title: string }) {
     .slice(0, 2) ?? "DR";
 
   const handleLogout = () => {
-    localStorage.removeItem("loggedInUser");
+    dispatch(logout());
     window.location.href = "/";
   };
 

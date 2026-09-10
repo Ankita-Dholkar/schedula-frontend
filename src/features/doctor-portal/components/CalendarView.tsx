@@ -8,6 +8,8 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import type { Appointment } from "@/types/appointment";
 import type { DoctorAvailability } from "@/types/availability";
+import { useAppDispatch } from "@/store/hooks";
+import { rescheduleApt, addUserNotification } from "@/store/slices/appointmentsSlice";
 import {
   getComputedAppointmentStatus,
   rescheduleAppointment,
@@ -145,6 +147,7 @@ export default function CalendarView({
   onSelectEvent,
   doctorId,
 }: Props) {
+  const dispatch = useAppDispatch();
   const [view, setView] = useState<string>(Views.WEEK);
   const [date, setDate] = useState(new Date());
   const [availability, setAvailability] = useState<DoctorAvailability | null>(null);
@@ -259,14 +262,16 @@ export default function CalendarView({
       }
 
       const newStartsAt = newStart.toISOString();
-      rescheduleAppointment(apt.id, newStartsAt);
-      saveNotification({
-        appointmentId: apt.id,
-        patientName: apt.patient.name,
-        message: `Your appointment has been rescheduled to ${moment(newStartsAt).format(
-          "dddd, MMM D"
-        )} at ${moment(newStartsAt).format("h:mm A")}.`,
-      });
+      dispatch(rescheduleApt({ id: apt.id, newStartsAt }));
+      dispatch(
+        addUserNotification({
+          appointmentId: apt.id,
+          patientName: apt.patient.name,
+          message: `Your appointment has been rescheduled to ${moment(newStartsAt).format(
+            "dddd, MMM D"
+          )} at ${moment(newStartsAt).format("h:mm A")}.`,
+        })
+      );
 
       onToast(
         `✓ Rescheduled for ${moment(newStartsAt).format("ddd, MMM D [at] h:mm A")}`,
