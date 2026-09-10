@@ -5,6 +5,7 @@ import { X, CalendarDays, Clock, Tag, MapPin, User } from "lucide-react";
 import type { Appointment } from "@/types/appointment";
 import { updateAppointmentStatus, getComputedAppointmentStatus, saveNotification } from "@/lib/mock-data/appointments";
 import RescheduleCalendarModal from "./RescheduleCalendarModal";
+import PatientRiskSnapshot from "./PatientRiskSnapshot";
 
 type Props = {
   appointment: Appointment | null;
@@ -86,6 +87,9 @@ export default function AppointmentDetailPanel({ appointment, appointments = [],
           <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset capitalize mb-6 ${STATUS_STYLES[computedStatus]}`}>
             {computedStatus}
           </span>
+
+          {/* Patient Risk Snapshot */}
+          <PatientRiskSnapshot appointment={appointment} />
 
           {/* Details grid */}
           <div className="space-y-4">

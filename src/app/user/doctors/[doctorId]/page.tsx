@@ -15,6 +15,7 @@ import type { DoctorAvailability, TimeSlot } from "@/types/availability";
 import DateSelector from "@/features/booking/components/DateSelector";
 import SlotSelector from "@/features/booking/components/SlotSelector";
 import UserPortalHeader from "@/features/user-portal/components/UserPortalHeader";
+import VoiceInputButton from "@/features/user-portal/components/VoiceInputButton";
 
 function formatTime(time: string): string {
   const [h, m] = time.split(":").map(Number);
@@ -335,13 +336,25 @@ export default function UserDoctorBookingPage() {
               <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
                 Reason for Visit <span className="text-red-400">*</span>
               </label>
-              <textarea
-                value={reasonForVisit}
-                onChange={(e) => { setReasonForVisit(e.target.value); setError(""); }}
-                rows={3}
-                placeholder="Briefly describe your symptoms or reason for visiting (e.g. I have been having headaches for 3 days...)"
-                className="w-full rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)] placeholder:text-stone-400 resize-none"
-              />
+              <div className="relative">
+                <textarea
+                  value={reasonForVisit}
+                  onChange={(e) => { setReasonForVisit(e.target.value); setError(""); }}
+                  rows={3}
+                  placeholder="Briefly describe your symptoms or reason for visiting (e.g. I have been having headaches for 3 days...)"
+                  className="w-full rounded-lg border border-[var(--line)] bg-white px-4 py-3 pr-12 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)] placeholder:text-stone-400 resize-none"
+                />
+                <div className="absolute right-2 top-2">
+                  <VoiceInputButton
+                    onTranscript={(text) => {
+                      setReasonForVisit((prev) =>
+                        prev.trim() ? `${prev.trim()} ${text}` : text
+                      );
+                      setError("");
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           </section>
 
