@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   CalendarCheck, Clock, CheckCircle, XCircle,
-  User, ChevronRight, Calendar,
+  User, ChevronRight, Calendar, Star,
 } from "lucide-react";
 import { getAllAppointments, updateAppointmentStatus, getComputedAppointmentStatus } from "@/lib/mock-data/appointments";
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
 import DoctorPortalHeader from "@/features/doctor-portal/components/DoctorPortalHeader";
 import AppointmentDetailPanel from "@/features/doctor-portal/components/AppointmentDetailPanel";
 import RescheduleCalendarModal from "@/features/doctor-portal/components/RescheduleCalendarModal";
+import { useAppSelector } from "@/store/hooks";
+import { selectAverageRating, selectDoctorReviews } from "@/store/slices/reviewsSlice";
 
 type StoredUser = { id: string; name: string; email: string; role: string };
 
@@ -33,9 +35,16 @@ const isSameDate = (iso: string, dateStr: string) => iso.startsWith(dateStr);
 
 export default function DoctorDashboardPage() {
   const [doctorName, setDoctorName] = useState<string>("");
+  const [doctorId, setDoctorId] = useState<string>("");
   const [myAppointments, setMyAppointments] = useState<Appointment[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+
+  // Resolve doctor key (id preferred, name as fallback) for review selectors
+  const doctorKey = doctorId || doctorName;
+  const avgRating = useAppSelector((state) => selectAverageRating(state, doctorKey));
+  const allReviews = useAppSelector((state) => selectDoctorReviews(state, doctorKey));
+  const totalReviews = allReviews.length;
 
   const todayStr = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
@@ -46,6 +55,7 @@ export default function DoctorDashboardPage() {
       if (stored) {
         const user: StoredUser = JSON.parse(stored);
         setDoctorName(user.name);
+        setDoctorId(user.id || "");
         const mine = getAllAppointments().filter((a) => a.clinician === user.name);
         setMyAppointments(mine);
       }
@@ -135,6 +145,39 @@ export default function DoctorDashboardPage() {
               <strong className="text-[var(--ink)]">{value}</strong> {label}
             </span>
           ))}
+        </div>
+
+        {/* Rating Quick Insight */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--line)] bg-white px-6 py-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
+              <Star size={18} className="fill-amber-400 text-amber-400" />
+            </div>
+            <div>
+              {totalReviews > 0 ? (
+                <>
+                  <p className="text-xl font-bold text-[var(--ink)]">
+                    {avgRating.toFixed(1)}{" "}
+                    <span className="text-amber-400">★</span>
+                  </p>
+                  <p className="text-xs text-[var(--muted)]">
+                    {totalReviews} patient review{totalReviews !== 1 ? "s" : ""}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-[var(--muted)]">No ratings yet</p>
+                  <p className="text-xs text-[var(--muted)]">Complete appointments to receive reviews</p>
+                </>
+              )}
+            </div>
+          </div>
+          <Link
+            href="/doctor/ratings"
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--brand)] px-4 py-2 text-sm font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)] hover:text-white"
+          >
+            View Ratings <ChevronRight size={15} />
+          </Link>
         </div>
 
         {/* Quick Actions */}

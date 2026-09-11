@@ -7,6 +7,7 @@ import {
   CalendarCheck,
   User,
   ClipboardList,
+  Star,
   LogOut,
 } from "lucide-react";
 
@@ -14,6 +15,7 @@ const navItems = [
   { label: "Dashboard",    href: "/doctor/dashboard",    icon: LayoutDashboard },
   { label: "Appointments", href: "/doctor/appointments", icon: CalendarCheck   },
   { label: "Prescriptions",href: "/doctor/prescriptions",icon: ClipboardList   },
+  { label: "Ratings",      href: "/doctor/ratings",      icon: Star            },
   { label: "My Profile",   href: "/doctor/profile",      icon: User            },
 ];
 
