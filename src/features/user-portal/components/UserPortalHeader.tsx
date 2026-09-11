@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { LogOut, Bell, Check } from "lucide-react";
+import { LogOut, Bell, Check, Menu } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
 import { readUserNotification } from "@/store/slices/appointmentsSlice";
+import { useSidebarToggle } from "@/store/SidebarToggleContext";
 
 type Props = {
   title: string;
+  onMenuClick?: () => void;
 };
 
 const timeAgo = (dateString: string) => {
@@ -19,8 +21,10 @@ const timeAgo = (dateString: string) => {
   return `${Math.floor(hrs / 24)}d ago`;
 };
 
-export default function UserPortalHeader({ title }: Props) {
+export default function UserPortalHeader({ title, onMenuClick }: Props) {
   const dispatch = useAppDispatch();
+  const toggleSidebar = useSidebarToggle();
+  const handleMenuClick = onMenuClick ?? toggleSidebar;
   const user = useAppSelector((state) => state.auth.user);
   const notifications = useAppSelector(
     (state) => state.appointments.userNotifications
@@ -54,8 +58,18 @@ export default function UserPortalHeader({ title }: Props) {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-[var(--line)] bg-white px-6">
-      <h1 className="text-xl font-semibold tracking-tight text-[var(--ink)]">{title}</h1>
+    <header className="flex h-16 items-center justify-between border-b border-[var(--line)] bg-white px-4 lg:px-6">
+      <div className="flex items-center gap-3">
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={handleMenuClick}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-stone-100 hover:text-[var(--ink)] lg:hidden"
+          aria-label="Open menu"
+        >
+          <Menu size={20} />
+        </button>
+        <h1 className="text-xl font-semibold tracking-tight text-[var(--ink)]">{title}</h1>
+      </div>
 
       <div className="flex items-center gap-4">
         {/* Notifications */}
@@ -71,7 +85,7 @@ export default function UserPortalHeader({ title }: Props) {
           </button>
 
           {showDropdown && (
-            <div className="absolute right-0 top-11 z-50 w-80 overflow-hidden rounded-xl border border-[var(--line)] bg-white shadow-xl">
+            <div className="absolute right-0 top-11 z-50 w-[min(320px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[var(--line)] bg-white shadow-xl">
               <div className="flex items-center justify-between border-b border-[var(--line)] bg-[var(--canvas)] px-4 py-3">
                 <p className="text-sm font-semibold text-[var(--ink)]">Notifications</p>
                 <span className="text-xs font-medium text-[var(--muted)]">{unreadCount} new</span>

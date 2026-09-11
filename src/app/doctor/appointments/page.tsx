@@ -197,8 +197,13 @@ export default function DoctorAppointmentsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--line)] bg-[var(--canvas)]">
-                    {["#", "Patient", "Date & Time", "Type", "Reason", "Room", "Status", ""].map((h) => (
-                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    {["#", "Patient", "Date & Time", "Type", "Reason", "Room", "Status", ""].map((h, i) => (
+                      <th
+                        key={h}
+                        className={`px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--muted)] ${
+                          i >= 3 && i <= 5 ? "hidden sm:table-cell" : ""
+                        }`}
+                      >
                         {h}
                       </th>
                     ))}
@@ -230,11 +235,11 @@ export default function DoctorAppointmentsPage() {
                         <p className="text-xs text-[var(--muted)]">{formatDate(apt.startsAt)}</p>
                       </td>
 
-                      <td className="px-5 py-3.5 text-[var(--muted)]">{apt.type ?? "—"}</td>
+                      <td className="hidden sm:table-cell px-5 py-3.5 text-[var(--muted)]">{apt.type ?? "—"}</td>
 
-                      <td className="max-w-[160px] truncate px-5 py-3.5 text-[var(--muted)]">{apt.reason}</td>
+                      <td className="hidden sm:table-cell max-w-[160px] truncate px-5 py-3.5 text-[var(--muted)]">{apt.reason}</td>
 
-                      <td className="px-5 py-3.5 text-[var(--muted)]">{apt.room}</td>
+                      <td className="hidden sm:table-cell px-5 py-3.5 text-[var(--muted)]">{apt.room}</td>
 
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ring-1 ring-inset ${STATUS_STYLES[apt._computed]}`}>

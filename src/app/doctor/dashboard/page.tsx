@@ -229,8 +229,13 @@ export default function DoctorDashboardPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--line)] bg-[var(--canvas)]">
-                    {["Patient", "Date & Time", "Type", "Mode", "Reason", "Duration", "Status", "Actions"].map((h) => (
-                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    {["Patient", "Date & Time", "Type", "Mode", "Reason", "Duration", "Status", "Actions"].map((h, i) => (
+                      <th
+                        key={h}
+                        className={`px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--muted)] ${
+                          i === 3 || i === 5 ? "hidden sm:table-cell" : ""
+                        }`}
+                      >
                         {h}
                       </th>
                     ))}
@@ -266,7 +271,7 @@ export default function DoctorDashboardPage() {
                             <span className="text-xs text-[var(--muted)]">—</span>
                           )}
                         </td>
-                        <td className="px-5 py-3.5">
+                        <td className="hidden sm:table-cell px-5 py-3.5">
                           {apt.appointmentMode ? (
                             <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
                               apt.appointmentMode === "online"
@@ -280,7 +285,7 @@ export default function DoctorDashboardPage() {
                           )}
                         </td>
                         <td className="max-w-[160px] truncate px-5 py-3.5 text-[var(--muted)]">{apt.reason}</td>
-                        <td className="px-5 py-3.5 text-[var(--muted)]">{apt.durationMinutes} min</td>
+                        <td className="hidden sm:table-cell px-5 py-3.5 text-[var(--muted)]">{apt.durationMinutes} min</td>
                         <td className="px-5 py-3.5">
                           <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${className}`}>
                             {label}
