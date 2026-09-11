@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DoctorSidebar from "@/features/doctor-portal/components/DoctorSidebar";
 import AssistantProvider from "@/features/assistant/components/AssistantProvider";
+import { SidebarToggleContext } from "@/store/SidebarToggleContext";
 
 export default function DoctorPortalLayout({
   children,
@@ -12,6 +13,7 @@ export default function DoctorPortalLayout({
 }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -27,20 +29,22 @@ export default function DoctorPortalLayout({
     }
   }, [router]);
 
-  if (!authorized) return null; // blank screen while redirecting
+  if (!authorized) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--canvas)]">
-      {/* Fixed Sidebar */}
-      <DoctorSidebar />
+    <SidebarToggleContext.Provider value={() => setSidebarOpen(true)}>
+      <div className="flex h-screen overflow-hidden bg-[var(--canvas)]">
+        {/* Sidebar — drawer on mobile, static on lg+ */}
+        <DoctorSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Scrollable main content */}
-      <div className="flex flex-1 flex-col overflow-y-auto">
-        {children}
+        {/* Scrollable main content */}
+        <div className="flex flex-1 flex-col overflow-y-auto min-w-0">
+          {children}
+        </div>
+
+        {/* Schedula Assistant — Doctor Portal */}
+        <AssistantProvider portalRole="doctor" />
       </div>
-
-      {/* Schedula Assistant — Doctor Portal */}
-      <AssistantProvider portalRole="doctor" />
-    </div>
+    </SidebarToggleContext.Provider>
   );
 }
