@@ -20,7 +20,8 @@ import CancelAppointmentModal from "@/features/user-portal/components/CancelAppo
 import { downloadPrescription } from "@/lib/prescription";
 import type { Appointment } from "@/types/appointment";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { refreshAppointments, addDoctorNotification } from "@/store/slices/appointmentsSlice";
+import { refreshAppointments } from "@/store/slices/appointmentsSlice";
+import { selectHasReviewedAppointment } from "@/store/slices/reviewsSlice";
 import { getComputedAppointmentStatus } from "@/lib/mock-data/appointments";
 import { useEffect } from "react";
 
@@ -60,6 +61,36 @@ const formatDate = (iso: string) =>
 /** Eligible = not started, not completed, not cancelled */
 function isEligibleForAction(computed: ComputedStatus): boolean {
   return computed === "upcoming" || computed === "confirmed" || computed === "pending";
+}
+
+/** Renders Reviewed badge or active Review button depending on Redux review state. */
+function ReviewButton({
+  appointmentId,
+  onReview,
+}: {
+  appointmentId: string;
+  onReview: () => void;
+}) {
+  const reviewed = useAppSelector((state) =>
+    selectHasReviewedAppointment(state, appointmentId)
+  );
+
+  if (reviewed) {
+    return (
+      <div className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-50 py-2 text-sm font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+        <Star size={14} className="fill-emerald-600 text-emerald-600" /> Reviewed
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={onReview}
+      className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--line)] py-2 text-sm font-semibold text-[var(--ink)] hover:bg-stone-50"
+    >
+      <Star size={14} /> Review
+    </button>
+  );
 }
 
 function UserAppointmentsPage() {
@@ -239,12 +270,11 @@ function UserAppointmentsPage() {
                     </div>
 
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => setReviewAppointment(apt)}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--line)] py-2 text-sm font-semibold text-[var(--ink)] hover:bg-stone-50"
-                      >
-                        <Star size={14} /> Review
-                      </button>
+                      {/* Reactive Reviewed badge — reads from Redux, updates immediately on dispatch */}
+                      <ReviewButton
+                        appointmentId={apt.id}
+                        onReview={() => setReviewAppointment(apt)}
+                      />
                       <button
                         onClick={() => (window.location.href = "/user/doctors")}
                         className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] py-2 text-sm font-semibold text-white hover:bg-[var(--brand-deep)]"
@@ -277,17 +307,6 @@ function UserAppointmentsPage() {
         <ReviewModal
           appointment={reviewAppointment}
           onClose={() => setReviewAppointment(null)}
-          onSubmit={(rating, review) => {
-            dispatch(
-              addDoctorNotification({
-                appointmentId: reviewAppointment.id,
-                patientName: reviewAppointment.patient.name,
-                message: `New ${rating}-star review: "${review || "No written feedback"}"`,
-              })
-            );
-            alert(`Thanks for rating ${reviewAppointment.clinician} ${rating} stars!`);
-            setReviewAppointment(null);
-          }}
         />
       )}
 
