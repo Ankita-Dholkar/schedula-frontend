@@ -7,6 +7,7 @@ import { hydrateAuth } from "./slices/authSlice";
 import { refreshAppointments } from "./slices/appointmentsSlice";
 import { refreshDoctors } from "./slices/doctorsSlice";
 import { refreshPrescriptions } from "./slices/prescriptionsSlice";
+import { hydrateReviews } from "./slices/reviewsSlice";
 
 function HydrateStore({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -14,6 +15,7 @@ function HydrateStore({ children }: { children: React.ReactNode }) {
     store.dispatch(refreshAppointments());
     store.dispatch(refreshDoctors());
     store.dispatch(refreshPrescriptions());
+    store.dispatch(hydrateReviews());
   }, []);
 
   return <>{children}</>;
