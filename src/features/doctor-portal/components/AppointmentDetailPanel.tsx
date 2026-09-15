@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { X, CalendarDays, Clock, Tag, MapPin, User } from "lucide-react";
+import { X, CalendarDays, Clock, Tag, MapPin, User, CreditCard } from "lucide-react";
 import type { Appointment } from "@/types/appointment";
+import { CONSULTATION_FEE } from "@/types/payment";
 import { updateAppointmentStatus, getComputedAppointmentStatus, saveNotification } from "@/lib/mock-data/appointments";
 import RescheduleCalendarModal from "./RescheduleCalendarModal";
 import PatientRiskSnapshot from "./PatientRiskSnapshot";
@@ -139,6 +140,48 @@ export default function AppointmentDetailPanel({ appointment, appointments = [],
                 </div>
               </div>
             )}
+          </div>
+
+          {/* ── Payment Details ─────────────────────────────── */}
+          <div className="mt-6 rounded-xl border border-[var(--line)] bg-[var(--canvas)] p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <CreditCard size={14} className="text-[var(--brand)]" />
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                Payment Details
+              </p>
+            </div>
+            <div className="space-y-2.5 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--muted)]">Consultation Fee</span>
+                <span className="font-bold text-[var(--ink)]">
+                  ₹{appointment.consultationFee ?? CONSULTATION_FEE}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--muted)]">Payment Status</span>
+                {appointment.paymentStatus === "paid" ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                    Paid
+                  </span>
+                ) : appointment.paymentStatus === "failed" ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200">
+                    Failed
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
+                    Pending
+                  </span>
+                )}
+              </div>
+              {appointment.paymentStatus === "paid" && appointment.transactionId && (
+                <div className="flex items-center justify-between border-t border-[var(--line)] pt-2.5">
+                  <span className="text-[var(--muted)]">Transaction ID</span>
+                  <span className="font-mono text-xs font-semibold text-[var(--ink)]">
+                    {appointment.transactionId}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

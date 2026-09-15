@@ -24,5 +24,5 @@ export type Appointment = {
   /** Mirrors Payment.transactionId once paid. */
   transactionId?: string;
   /** Mirrors Payment.method once a method is selected. */
-  paymentMethod?: "demo-card" | "upi";
+  paymentMethod?: "card" | "upi";
 };

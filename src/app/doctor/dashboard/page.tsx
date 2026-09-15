@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { getAllAppointments, updateAppointmentStatus, getComputedAppointmentStatus } from "@/lib/mock-data/appointments";
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
+import { CONSULTATION_FEE } from "@/types/payment";
 import DoctorPortalHeader from "@/features/doctor-portal/components/DoctorPortalHeader";
 import AppointmentDetailPanel from "@/features/doctor-portal/components/AppointmentDetailPanel";
 import RescheduleCalendarModal from "@/features/doctor-portal/components/RescheduleCalendarModal";
@@ -85,7 +86,10 @@ export default function DoctorDashboardPage() {
     total:     myAppointments.length,
     confirmed: myAppointments.filter((a) => a.status === "confirmed").length,
     pending:   myAppointments.filter((a) => a.status === "pending").length,
+    paid:      myAppointments.filter((a) => a.paymentStatus === "paid").length,
+    unpaid:    myAppointments.filter((a) => a.paymentStatus === "pending" || a.paymentStatus === "failed").length,
   };
+  const collectedRevenue = allCounts.paid * CONSULTATION_FEE;
 
   // Upcoming: future pending or confirmed
   const upcoming = myAppointments
@@ -145,6 +149,17 @@ export default function DoctorDashboardPage() {
               <strong className="text-[var(--ink)]">{value}</strong> {label}
             </span>
           ))}
+          <div className="ml-auto flex items-center gap-4">
+            <span className="text-sm text-[var(--muted)]">
+              <strong className="text-emerald-700">{allCounts.paid}</strong> paid
+            </span>
+            <span className="text-sm text-[var(--muted)]">
+              <strong className="text-amber-700">{allCounts.unpaid}</strong> unpaid
+            </span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+              ₹{collectedRevenue.toLocaleString()} collected
+            </span>
+          </div>
         </div>
 
         {/* Rating Quick Insight */}

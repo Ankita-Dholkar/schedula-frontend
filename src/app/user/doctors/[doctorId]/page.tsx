@@ -3,17 +3,22 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { CheckCircle2, ArrowLeft, Stethoscope, Video, Building2, FileText } from "lucide-react";
+import { CheckCircle2, ArrowLeft, Stethoscope, Video, Building2, FileText, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { UserCircle2 } from "lucide-react";
 
 import { getAllDoctors } from "@/lib/mock-data/doctors";
-import { getAllAppointments, saveAppointment, saveNotification } from "@/lib/mock-data/appointments";
+import { getAllAppointments, saveAppointment, saveNotification, saveDoctorNotification } from "@/lib/mock-data/appointments";
 import { getDoctorAvailability, loadPersistedAvailability, saveDoctorAvailability } from "@/lib/mock-data/availability";
 import type { DoctorAvailability, TimeSlot } from "@/types/availability";
+import { CONSULTATION_FEE, type PaymentMethod } from "@/types/payment";
+import { useAppDispatch } from "@/store/hooks";
+import { recordPaidPayment } from "@/store/slices/paymentsSlice";
+import { refreshAppointments } from "@/store/slices/appointmentsSlice";
 
 import DateSelector from "@/features/booking/components/DateSelector";
 import SlotSelector from "@/features/booking/components/SlotSelector";
+import DemoPaymentModal from "@/features/booking/components/DemoPaymentModal";
 import UserPortalHeader from "@/features/user-portal/components/UserPortalHeader";
 import VoiceInputButton from "@/features/user-portal/components/VoiceInputButton";
 
@@ -36,6 +41,7 @@ function getBookedTimes(doctorName: string, date: string): string[] {
 export default function UserDoctorBookingPage() {
   const params = useParams();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const doctorId = params.doctorId as string;
   // Use local date (not UTC) to avoid timezone off-by-one-day bug
   const toLocalDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -48,6 +54,11 @@ export default function UserDoctorBookingPage() {
   const [error, setError] = useState("");
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [doctor, setDoctor] = useState<ReturnType<typeof getAllDoctors>[number] | null>(null);
+  // Payment state
+  const [bookedAptId, setBookedAptId] = useState("");
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentDone, setPaymentDone] = useState(false);
+  const [paidTransactionId, setPaidTransactionId] = useState("");
 
   // New booking detail fields
   const [appointmentType, setAppointmentType] = useState("Consultation");
@@ -112,6 +123,7 @@ export default function UserDoctorBookingPage() {
     setError("");
   };
 
+  // ── handleBooking: local hold only — no writes to Redux or localStorage ──────
   const handleBooking = () => {
     if (!selectedSlotId || !selectedSlotObj) {
       setError("Please select a time slot before confirming.");
@@ -123,6 +135,17 @@ export default function UserDoctorBookingPage() {
     }
     setError("");
 
+    // Generate the appointment ID ahead of time so it is shared across all steps
+    const newAptId = `apt-${Date.now()}`;
+    setBookedAptId(newAptId);
+    // Transition to the payment-required screen (local state only)
+    setIsBooked(true);
+  };
+
+  // ── handlePaymentSuccess: single finalization flow after payment ───────────
+  const handlePaymentSuccess = (txId: string, method: PaymentMethod) => {
+    if (!selectedSlotObj) return;
+
     let patientName = "Guest User";
     try {
       const stored = localStorage.getItem("loggedInUser");
@@ -132,6 +155,7 @@ export default function UserDoctorBookingPage() {
       }
     } catch { /* ignore */ }
 
+    // Step 1: Mark the slot as booked in availability
     if (availability) {
       const updated = {
         ...availability,
@@ -145,29 +169,60 @@ export default function UserDoctorBookingPage() {
       saveDoctorAvailability(updated);
     }
 
+    // Step 2: Finalize and persist the confirmed appointment
     const aptDuration = daySchedule?.slotDuration ?? 30;
-    const newAptId = `apt-${Date.now()}`;
     saveAppointment({
-      id: newAptId,
+      id: bookedAptId,
       patient: { name: patientName, initials: patientName.substring(0, 2).toUpperCase(), age: 30 },
       clinician: doctor.name,
       specialty: doctor.specialization,
       startsAt: `${selectedDate}T${selectedSlotObj.start}:00`,
       durationMinutes: aptDuration,
-      status: "pending",
+      status: "confirmed",
       reason: reasonForVisit.trim(),
       type: appointmentType,
       appointmentMode,
       room: appointmentMode === "online" ? "Video Call" : "Room TBD",
+      consultationFee: CONSULTATION_FEE,
+      paymentStatus: "paid",
+      transactionId: txId,
+      paymentMethod: method,
     });
 
+    // Step 3: Record the paid payment in Redux (store subscriber persists to localStorage)
+    dispatch(
+      recordPaidPayment({
+        id: `pay-${bookedAptId}`,
+        appointmentId: bookedAptId,
+        amount: CONSULTATION_FEE,
+        method,
+        status: "paid",
+        transactionId: txId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+    );
+
+    // Step 4: Refresh Redux appointments so all views stay in sync
+    dispatch(refreshAppointments());
+
+    // Step 5: Save notifications for patient and doctor
     saveNotification({
-      appointmentId: newAptId,
+      appointmentId: bookedAptId,
       patientName,
-      message: `Your booking request with ${doctor.name} was sent and is awaiting confirmation.`,
+      message: `Your appointment with ${doctor.name} is confirmed. Transaction ID: ${txId}`,
+    });
+    saveDoctorNotification({
+      appointmentId: bookedAptId,
+      patientName,
+      message: `${patientName} has confirmed an appointment with you. Transaction ID: ${txId}`,
+      doctorId: doctor.id,
     });
 
-    setIsBooked(true);
+    // Step 6: Update local UI state to show confirmation
+    setPaidTransactionId(txId);
+    setPaymentDone(true);
+    setShowPaymentModal(false);
   };
 
   const formattedDate = new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", {
@@ -178,19 +233,34 @@ export default function UserDoctorBookingPage() {
   if (isBooked && selectedSlotObj) {
     return (
       <>
-        <UserPortalHeader title="Booking Confirmed" />
+        <UserPortalHeader title={paymentDone ? "Booking Confirmed" : "Payment Required"} />
         <div className="flex flex-1 items-center justify-center px-4 py-8">
           <div className="w-full max-w-[420px] rounded-2xl border border-[var(--line)] bg-white p-8 text-center shadow-sm">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-              <CheckCircle2 size={32} className="text-emerald-500" />
-            </div>
-            <h2 className="mt-5 text-2xl font-semibold text-[var(--ink)]">Appointment Booked!</h2>
-            <p className="mt-2 text-sm text-[var(--muted)]">Your appointment has been successfully booked and is awaiting confirmation.</p>
 
+            {/* Icon */}
+            <div className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${
+              paymentDone ? "bg-emerald-50" : "bg-amber-50"
+            }`}>
+              {paymentDone
+                ? <CheckCircle2 size={32} className="text-emerald-500" />
+                : <CreditCard size={28} className="text-amber-500" />
+              }
+            </div>
+
+            <h2 className="mt-5 text-2xl font-semibold text-[var(--ink)]">
+              {paymentDone ? "Appointment Confirmed!" : "Appointment Booked!"}
+            </h2>
+            <p className="mt-2 text-sm text-[var(--muted)]">
+              {paymentDone
+                ? "Your payment was successful and your appointment is confirmed."
+                : "Complete payment to confirm your appointment."}
+            </p>
+
+            {/* Appointment summary */}
             <div className="mt-6 rounded-xl border border-[var(--line)] bg-[var(--canvas)] p-4 text-left">
               <p className="font-semibold text-[var(--ink)]">{doctor.name}</p>
               <p className="mt-0.5 text-sm text-[var(--brand)]">{doctor.specialization}</p>
-              <div className="mt-4 space-y-2 border-t border-[var(--line)] pt-4 text-sm">
+              <div className="mt-4 space-y-2.5 border-t border-[var(--line)] pt-4 text-sm">
                 <div className="flex justify-between">
                   <span className="text-[var(--muted)]">Date</span>
                   <span className="font-medium text-[var(--ink)]">{formattedDate}</span>
@@ -207,25 +277,67 @@ export default function UserDoctorBookingPage() {
                   <span className="text-[var(--muted)]">Mode</span>
                   <span className="font-medium text-[var(--ink)]">{appointmentMode === "online" ? "Online (Video)" : "In-person"}</span>
                 </div>
+                {/* Payment row */}
+                <div className="flex items-center justify-between border-t border-[var(--line)] pt-2.5">
+                  <span className="text-[var(--muted)]">Consultation Fee</span>
+                  <span className="font-bold text-[var(--ink)]">₹{CONSULTATION_FEE}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--muted)]">Payment</span>
+                  {paymentDone ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                      Paid
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
+                      Pending
+                    </span>
+                  )}
+                </div>
+                {paymentDone && paidTransactionId && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[var(--muted)]">Transaction ID</span>
+                    <span className="font-mono text-xs font-semibold text-[var(--ink)]">{paidTransactionId}</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => router.push("/user/appointments")}
-                className="flex-1 rounded-lg border border-[var(--line)] py-2.5 text-sm font-semibold text-[var(--ink)] hover:bg-stone-50"
-              >
-                My Appointments
-              </button>
-              <button
-                onClick={() => router.push("/user/doctors")}
-                className="flex-1 rounded-lg bg-[var(--brand)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--brand-deep)]"
-              >
-                Back to Doctors
-              </button>
+            {/* Actions */}
+            <div className="mt-6 flex flex-col gap-3">
+              {!paymentDone && (
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] py-3 text-sm font-bold text-white transition hover:bg-[var(--brand-deep)]"
+                >
+                  <CreditCard size={16} /> Pay Now — ₹{CONSULTATION_FEE}
+                </button>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => router.push("/user/appointments")}
+                  className="flex-1 rounded-lg border border-[var(--line)] py-2.5 text-sm font-semibold text-[var(--ink)] hover:bg-stone-50"
+                >
+                  My Appointments
+                </button>
+                <button
+                  onClick={() => router.push("/user/doctors")}
+                  className="flex-1 rounded-lg border border-[var(--line)] py-2.5 text-sm font-semibold text-[var(--ink)] hover:bg-stone-50"
+                >
+                  Back to Doctors
+                </button>
+              </div>
             </div>
           </div>
         </div>
+
+        {showPaymentModal && (
+          <DemoPaymentModal
+            appointmentId={bookedAptId}
+            onClose={() => setShowPaymentModal(false)}
+            onSuccess={(txId, method) => handlePaymentSuccess(txId, method)}
+          />
+        )}
       </>
     );
   }

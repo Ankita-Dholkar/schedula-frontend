@@ -6,6 +6,7 @@ import prescriptionsReducer from "./slices/prescriptionsSlice";
 import doctorsReducer from "./slices/doctorsSlice";
 import reviewsReducer from "./slices/reviewsSlice";
 import paymentsReducer from "./slices/paymentsSlice";
+import { persistPayments } from "@/lib/mock-data/payments";
 
 export const store = configureStore({
   reducer: {
@@ -25,3 +26,14 @@ export const store = configureStore({
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+
+let previousPayments = store.getState().payments.payments;
+
+store.subscribe(() => {
+  const currentPayments = store.getState().payments.payments;
+
+  if (currentPayments !== previousPayments) {
+    persistPayments(currentPayments);
+    previousPayments = currentPayments;
+  }
+});
