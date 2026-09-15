@@ -5,6 +5,7 @@ import availabilityReducer from "./slices/availabilitySlice";
 import prescriptionsReducer from "./slices/prescriptionsSlice";
 import doctorsReducer from "./slices/doctorsSlice";
 import reviewsReducer from "./slices/reviewsSlice";
+import paymentsReducer from "./slices/paymentsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     prescriptions: prescriptionsReducer,
     doctors: doctorsReducer,
     reviews: reviewsReducer,
+    payments: paymentsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

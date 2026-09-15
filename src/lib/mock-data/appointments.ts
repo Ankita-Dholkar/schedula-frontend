@@ -16,6 +16,10 @@ export const appointments: Appointment[] = [
     type: "Follow-up",
     prescriptionAvailable: true,
     prescriptionUrl: "#",
+    consultationFee: 500,
+    paymentStatus: "paid",
+    transactionId: "DEMO-10420000",
+    paymentMethod: "demo-card",
   },
   {
     id: "apt-1043",
@@ -28,6 +32,8 @@ export const appointments: Appointment[] = [
     reason: "Annual wellness visit",
     room: "Room 04",
     type: "Check-up",
+    consultationFee: 500,
+    paymentStatus: "failed",
   },
   {
     id: "apt-1044",
@@ -41,6 +47,10 @@ export const appointments: Appointment[] = [
     room: "Room 12",
     type: "Consultation",
     prescriptionAvailable: false,
+    consultationFee: 500,
+    paymentStatus: "paid",
+    transactionId: "DEMO-10440000",
+    paymentMethod: "upi",
   },
   {
     id: "apt-1045",
@@ -53,6 +63,8 @@ export const appointments: Appointment[] = [
     reason: "Blood pressure review",
     room: "Room 04",
     type: "Follow-up",
+    consultationFee: 500,
+    paymentStatus: "failed",
   },
   {
     id: "apt-1046",
@@ -67,6 +79,10 @@ export const appointments: Appointment[] = [
     type: "Urgent",
     prescriptionAvailable: true,
     prescriptionUrl: "#",
+    consultationFee: 500,
+    paymentStatus: "paid",
+    transactionId: "DEMO-10460000",
+    paymentMethod: "demo-card",
   },
   {
     id: "apt-1047",
@@ -79,6 +95,8 @@ export const appointments: Appointment[] = [
     reason: "ECG review",
     room: "Room 08",
     type: "Follow-up",
+    consultationFee: 500,
+    paymentStatus: "failed",
   },
   {
     id: "apt-1048",
@@ -93,6 +111,10 @@ export const appointments: Appointment[] = [
     type: "Consultation",
     prescriptionAvailable: true,
     prescriptionUrl: "#",
+    consultationFee: 500,
+    paymentStatus: "paid",
+    transactionId: "DEMO-10480000",
+    paymentMethod: "upi",
   },
   {
     id: "apt-1049",
@@ -105,6 +127,8 @@ export const appointments: Appointment[] = [
     reason: "Acne treatment follow-up",
     room: "Room 12",
     type: "Follow-up",
+    consultationFee: 500,
+    paymentStatus: "failed",
   },
 
   // ── Future / upcoming (confirmed + future date) ──────────────────
@@ -119,6 +143,10 @@ export const appointments: Appointment[] = [
     reason: "General check-up",
     room: "Room 04",
     type: "Check-up",
+    consultationFee: 500,
+    paymentStatus: "paid",
+    transactionId: "DEMO-10500000",
+    paymentMethod: "demo-card",
   },
   {
     id: "apt-1051",
@@ -131,6 +159,10 @@ export const appointments: Appointment[] = [
     reason: "Fever and fatigue evaluation",
     room: "Room 04",
     type: "Consultation",
+    consultationFee: 500,
+    paymentStatus: "paid",
+    transactionId: "DEMO-10510000",
+    paymentMethod: "upi",
   },
   {
     id: "apt-1052",
@@ -143,6 +175,10 @@ export const appointments: Appointment[] = [
     reason: "Palpitations evaluation",
     room: "Room 08",
     type: "Urgent",
+    consultationFee: 500,
+    paymentStatus: "paid",
+    transactionId: "DEMO-10520000",
+    paymentMethod: "demo-card",
   },
   {
     id: "apt-1053",
@@ -155,6 +191,10 @@ export const appointments: Appointment[] = [
     reason: "Stress management session",
     room: "Room 02",
     type: "Consultation",
+    consultationFee: 500,
+    paymentStatus: "paid",
+    transactionId: "DEMO-10530000",
+    paymentMethod: "upi",
   },
   {
     id: "apt-1054",
@@ -167,9 +207,13 @@ export const appointments: Appointment[] = [
     reason: "Eczema follow-up",
     room: "Room 12",
     type: "Follow-up",
+    consultationFee: 500,
+    paymentStatus: "paid",
+    transactionId: "DEMO-10540000",
+    paymentMethod: "demo-card",
   },
 
-  // ── Pending (awaiting confirmation) ──────────────────────────────
+  // ── Pending (awaiting payment + confirmation) ─────────────────────
   {
     id: "apt-1055",
     patient: { name: "Rohan Verma", initials: "RV", age: 19 },
@@ -181,6 +225,8 @@ export const appointments: Appointment[] = [
     reason: "Sports injury review",
     room: "Room 04",
     type: "Follow-up",
+    consultationFee: 500,
+    paymentStatus: "pending",
   },
   {
     id: "apt-1056",
@@ -193,6 +239,8 @@ export const appointments: Appointment[] = [
     reason: "Hypertension management",
     room: "Room 08",
     type: "Check-up",
+    consultationFee: 500,
+    paymentStatus: "pending",
   },
   {
     id: "apt-1057",
@@ -205,6 +253,8 @@ export const appointments: Appointment[] = [
     reason: "Anxiety initial consultation",
     room: "Room 02",
     type: "Consultation",
+    consultationFee: 500,
+    paymentStatus: "pending",
   },
 ];
 

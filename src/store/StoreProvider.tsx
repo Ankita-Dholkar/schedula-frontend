@@ -8,6 +8,7 @@ import { refreshAppointments } from "./slices/appointmentsSlice";
 import { refreshDoctors } from "./slices/doctorsSlice";
 import { refreshPrescriptions } from "./slices/prescriptionsSlice";
 import { hydrateReviews } from "./slices/reviewsSlice";
+import { hydratePayments } from "./slices/paymentsSlice";
 
 function HydrateStore({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -16,6 +17,8 @@ function HydrateStore({ children }: { children: React.ReactNode }) {
     store.dispatch(refreshDoctors());
     store.dispatch(refreshPrescriptions());
     store.dispatch(hydrateReviews());
+    // Hydrate payments first so appointments get their payment fields synced
+    store.dispatch(hydratePayments());
   }, []);
 
   return <>{children}</>;

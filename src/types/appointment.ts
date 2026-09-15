@@ -16,4 +16,13 @@ export type Appointment = {
   updatedAt?: string;
   prescriptionAvailable?: boolean;
   prescriptionUrl?: string;
+  // ── Payment convenience fields (source of truth: paymentsSlice) ──────────
+  /** Mirrors the associated Payment.status for UI rendering. */
+  paymentStatus?: "pending" | "paid" | "failed";
+  /** Mirrors CONSULTATION_FEE at time of booking. */
+  consultationFee?: number;
+  /** Mirrors Payment.transactionId once paid. */
+  transactionId?: string;
+  /** Mirrors Payment.method once a method is selected. */
+  paymentMethod?: "demo-card" | "upi";
 };
