@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Calendar,
@@ -12,18 +12,20 @@ import {
   RefreshCw,
   CalendarDays,
   XCircle,
+  CreditCard,
 } from "lucide-react";
 import UserPortalHeader from "@/features/user-portal/components/UserPortalHeader";
 import ReviewModal from "@/features/user-portal/components/ReviewModal";
 import PatientRescheduleModal from "@/features/user-portal/components/PatientRescheduleModal";
 import CancelAppointmentModal from "@/features/user-portal/components/CancelAppointmentModal";
+import DemoPaymentModal from "@/features/booking/components/DemoPaymentModal";
 import { downloadPrescription } from "@/lib/prescription";
 import type { Appointment } from "@/types/appointment";
+import { CONSULTATION_FEE } from "@/types/payment";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { refreshAppointments } from "@/store/slices/appointmentsSlice";
 import { selectHasReviewedAppointment } from "@/store/slices/reviewsSlice";
 import { getComputedAppointmentStatus } from "@/lib/mock-data/appointments";
-import { useEffect } from "react";
 
 type ComputedStatus = "confirmed" | "pending" | "cancelled" | "completed" | "missed" | "upcoming";
 type FilterTab = "upcoming" | "completed" | "cancelled" | "missed";
@@ -105,6 +107,7 @@ function UserAppointmentsPage() {
   const [reviewAppointment, setReviewAppointment] = useState<Appointment | null>(null);
   const [rescheduleAppointment, setRescheduleAppointment] = useState<Appointment | null>(null);
   const [cancelAppointment, setCancelAppointment] = useState<Appointment | null>(null);
+  const [paymentAppointment, setPaymentAppointment] = useState<Appointment | null>(null);
 
   // Sync Redux store with localStorage on mount / focus
   useEffect(() => {
@@ -225,6 +228,35 @@ function UserAppointmentsPage() {
                   </div>
                 </div>
 
+                {/* ── Payment strip ─────────────────────────────── */}
+                <div className="mt-3 flex items-center justify-between rounded-lg border border-[var(--line)] px-3 py-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CreditCard size={14} className="shrink-0 text-[var(--muted)]" />
+                    <span className="font-medium text-[var(--ink)]">
+                      ₹{apt.consultationFee ?? CONSULTATION_FEE}
+                    </span>
+                  </div>
+                  {apt.paymentStatus === "paid" ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                      Paid
+                    </span>
+                  ) : apt.paymentStatus === "failed" ? (
+                    <button
+                      onClick={() => setPaymentAppointment(apt)}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200 transition hover:bg-red-100"
+                    >
+                      Failed — Retry
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setPaymentAppointment(apt)}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 transition hover:bg-amber-100"
+                    >
+                      Pay Now
+                    </button>
+                  )}
+                </div>
+
                 {/* ── Upcoming: Reschedule + Cancel ── */}
                 {activeTab === "upcoming" && isEligibleForAction(apt._computed) && (
                   <div className="mt-4 flex gap-2 border-t border-[var(--line)] pt-4">
@@ -301,6 +333,18 @@ function UserAppointmentsPage() {
           </div>
         )}
       </main>
+
+      {/* Demo Payment Modal */}
+      {paymentAppointment && (
+        <DemoPaymentModal
+          appointmentId={paymentAppointment.id}
+          onClose={() => setPaymentAppointment(null)}
+          onSuccess={() => {
+            setPaymentAppointment(null);
+            dispatch(refreshAppointments());
+          }}
+        />
+      )}
 
       {/* Review Modal */}
       {reviewAppointment && (

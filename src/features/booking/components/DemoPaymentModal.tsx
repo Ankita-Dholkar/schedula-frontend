@@ -10,13 +10,9 @@ import {
   Loader2,
   ShieldCheck,
 } from "lucide-react";
-import { useAppDispatch } from "@/store/hooks";
-import {
-  createPayment,
-  markPaymentSuccess,
-  markPaymentFailed,
-} from "@/store/slices/paymentsSlice";
+// Redux dispatches removed — payment persistence handled by caller in the single finalization flow.
 import { CONSULTATION_FEE, type PaymentMethod } from "@/types/payment";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,8 +21,8 @@ type Props = {
   patientId?: string;
   doctorId?: string;
   onClose: () => void;
-  /** Called with the transactionId after a successful demo payment. */
-  onSuccess?: (transactionId: string) => void;
+  /** Called with the transactionId and selected method after a successful demo payment. */
+  onSuccess?: (transactionId: string, method: PaymentMethod) => void;
 };
 
 type UiState = "idle" | "processing" | "success" | "failed";
@@ -41,7 +37,7 @@ const METHODS: {
   icon: React.ElementType;
 }[] = [
   {
-    id: "demo-card",
+    id: "card",
     label: "Demo Card",
     subLabel: "•••• •••• •••• 4242  ·  Exp 12/28",
     icon: CreditCard,
@@ -63,9 +59,8 @@ export default function DemoPaymentModal({
   onClose,
   onSuccess,
 }: Props) {
-  const dispatch = useAppDispatch();
 
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("demo-card");
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("card");
   const [simulate, setSimulate] = useState<SimulateOutcome>("success");
   const [uiState, setUiState] = useState<UiState>("idle");
   const [transactionId, setTransactionId] = useState("");
@@ -73,35 +68,17 @@ export default function DemoPaymentModal({
   const handlePay = async () => {
     setUiState("processing");
 
-    // Generate transactionId upfront so both slices receive the same value
+    // Generate transactionId upfront
     const txId = `DEMO-${Date.now().toString().slice(-8)}`;
-
-    // Create (or update) the pending payment record
-    dispatch(
-      createPayment({
-        id: `pay-${Date.now()}`,
-        appointmentId,
-        patientId,
-        doctorId,
-        amount: CONSULTATION_FEE,
-        method: selectedMethod,
-        status: "pending",
-        createdAt: new Date().toISOString(),
-      })
-    );
 
     // Simulate 1.4 s processing delay
     await new Promise<void>((resolve) => setTimeout(resolve, 1400));
 
     if (simulate === "success") {
       setTransactionId(txId);
-      dispatch(
-        markPaymentSuccess({ appointmentId, method: selectedMethod, transactionId: txId })
-      );
       setUiState("success");
-      onSuccess?.(txId);
+      onSuccess?.(txId, selectedMethod);
     } else {
-      dispatch(markPaymentFailed({ appointmentId, method: selectedMethod }));
       setUiState("failed");
     }
   };
@@ -125,10 +102,7 @@ export default function DemoPaymentModal({
                 <ShieldCheck size={16} className="text-[var(--brand)]" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-[var(--ink)]">Demo Payment</h2>
-                <p className="text-[11px] font-medium text-amber-600">
-                  No real money will be charged
-                </p>
+                <h2 className="text-sm font-semibold text-[var(--ink)]">Payment</h2>
               </div>
             </div>
             {uiState !== "processing" && (
@@ -224,7 +198,7 @@ export default function DemoPaymentModal({
                           : "border border-[var(--line)] bg-white text-[var(--muted)] hover:text-[var(--ink)]"
                       }`}
                     >
-                      ✅ Simulate Success
+                      Simulate Success
                     </button>
                     <button
                       type="button"
@@ -235,7 +209,7 @@ export default function DemoPaymentModal({
                           : "border border-[var(--line)] bg-white text-[var(--muted)] hover:text-[var(--ink)]"
                       }`}
                     >
-                      ❌ Simulate Failure
+                      Simulate Failure
                     </button>
                   </div>
                 </div>
@@ -283,7 +257,7 @@ export default function DemoPaymentModal({
                   <div className="flex items-center justify-between">
                     <span className="text-[var(--muted)]">Payment Status</span>
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                      ✅ Paid
+                      Paid
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -328,13 +302,13 @@ export default function DemoPaymentModal({
                   <div className="flex items-center justify-between">
                     <span className="text-[var(--muted)]">Payment Status</span>
                     <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-300">
-                      ❌ Failed
+                      Failed
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[var(--muted)]">Appointment</span>
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
-                      ⏳ Pending
+                      Pending
                     </span>
                   </div>
                 </div>

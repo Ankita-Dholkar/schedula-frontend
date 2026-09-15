@@ -1,5 +1,6 @@
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
 import { getAllPrescriptions } from "./prescriptions";
+import { getAllPayments } from "./payments";
 
 export const appointments: Appointment[] = [
   // ── Past appointments ────────────────────────────────────────────
@@ -19,7 +20,7 @@ export const appointments: Appointment[] = [
     consultationFee: 500,
     paymentStatus: "paid",
     transactionId: "DEMO-10420000",
-    paymentMethod: "demo-card",
+    paymentMethod: "card",
   },
   {
     id: "apt-1043",
@@ -82,7 +83,7 @@ export const appointments: Appointment[] = [
     consultationFee: 500,
     paymentStatus: "paid",
     transactionId: "DEMO-10460000",
-    paymentMethod: "demo-card",
+    paymentMethod: "card",
   },
   {
     id: "apt-1047",
@@ -146,7 +147,7 @@ export const appointments: Appointment[] = [
     consultationFee: 500,
     paymentStatus: "paid",
     transactionId: "DEMO-10500000",
-    paymentMethod: "demo-card",
+    paymentMethod: "card",
   },
   {
     id: "apt-1051",
@@ -178,7 +179,7 @@ export const appointments: Appointment[] = [
     consultationFee: 500,
     paymentStatus: "paid",
     transactionId: "DEMO-10520000",
-    paymentMethod: "demo-card",
+    paymentMethod: "card",
   },
   {
     id: "apt-1053",
@@ -210,7 +211,7 @@ export const appointments: Appointment[] = [
     consultationFee: 500,
     paymentStatus: "paid",
     transactionId: "DEMO-10540000",
-    paymentMethod: "demo-card",
+    paymentMethod: "card",
   },
 
   // ── Pending (awaiting payment + confirmation) ─────────────────────
@@ -276,6 +277,8 @@ export function getAllAppointments(): Appointment[] {
   } catch { /* ignore */ }
 
   const allPrescriptions = getAllPrescriptions();
+  const allPayments = getAllPayments();
+  const paymentMap = new Map(allPayments.map((p) => [p.appointmentId, p]));
   const all = [...appointments, ...storedAppointments];
   return all.map((apt) => {
     let result = statuses[apt.id] ? { ...apt, status: statuses[apt.id] } : apt;
@@ -290,8 +293,22 @@ export function getAllAppointments(): Appointment[] {
       // Fallback for static mock data
       result = { ...result, prescriptionAvailable: true, prescriptionUrl: "#" };
     }
-    
-    return result;
+
+    // Derive payment fields from the payment record (single source of truth).
+    // When a payment record exists, its fields take precedence.
+    // Existing mock appointments retain their seeded UI values for backward compatibility.
+    const payment = paymentMap.get(apt.id);
+    return {
+      ...result,
+      ...(payment
+        ? {
+            paymentStatus: payment.status,
+            transactionId: payment.transactionId,
+            paymentMethod: payment.method,
+            consultationFee: payment.amount,
+          }
+        : {}),
+    };
   });
 }
 

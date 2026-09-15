@@ -197,7 +197,7 @@ export default function DoctorAppointmentsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--line)] bg-[var(--canvas)]">
-                    {["#", "Patient", "Date & Time", "Type", "Reason", "Room", "Status", ""].map((h, i) => (
+                    {["#", "Patient", "Date & Time", "Type", "Reason", "Room", "Status", "Payment", ""].map((h, i) => (
                       <th
                         key={h}
                         className={`px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--muted)] ${
@@ -245,6 +245,23 @@ export default function DoctorAppointmentsPage() {
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ring-1 ring-inset ${STATUS_STYLES[apt._computed]}`}>
                           {apt._computed}
                         </span>
+                      </td>
+
+                      {/* Payment badge */}
+                      <td className="px-5 py-3.5">
+                        {apt.paymentStatus === "paid" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                            Paid
+                          </span>
+                        ) : apt.paymentStatus === "failed" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200">
+                            Failed
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
+                            Pending
+                          </span>
+                        )}
                       </td>
 
                       <td className="px-5 py-3.5">
