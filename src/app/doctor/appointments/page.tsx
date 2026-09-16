@@ -1,38 +1,52 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { Search, X, User, Calendar } from "lucide-react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { Search, X, User, Calendar, Video, Building2 } from "lucide-react";
 import {
   getAllAppointments,
   getComputedAppointmentStatus,
 } from "@/lib/mock-data/appointments";
+import type { ComputedStatus } from "@/lib/mock-data/appointments";
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
 import DoctorPortalHeader from "@/features/doctor-portal/components/DoctorPortalHeader";
 import AppointmentDetailPanel from "@/features/doctor-portal/components/AppointmentDetailPanel";
 
 type StoredUser = { id: string; name: string; email: string; role: string };
-type ComputedStatus = AppointmentStatus | "upcoming";
 type FilterTab = "all" | ComputedStatus;
-
 type AptWithComputed = Appointment & { _computed: ComputedStatus };
 
 const ALL_TABS: { value: FilterTab; label: string; color: string }[] = [
-  { value: "all",       label: "All",       color: "" },
-  { value: "pending",   label: "Pending",   color: "amber" },
-  { value: "upcoming",  label: "Upcoming",  color: "blue" },
-  { value: "confirmed", label: "Confirmed", color: "emerald" },
-  { value: "completed", label: "Completed", color: "stone" },
-  { value: "cancelled", label: "Cancelled", color: "stone" },
-  { value: "missed",    label: "Missed",    color: "red" },
+  { value: "all",            label: "All",           color: "" },
+  { value: "pending",        label: "Pending",        color: "amber" },
+  { value: "upcoming",       label: "Upcoming",       color: "blue" },
+  { value: "starting-soon",  label: "Starting Soon",  color: "orange" },
+  { value: "live",           label: "Live",           color: "green" },
+  { value: "confirmed",      label: "Confirmed",      color: "emerald" },
+  { value: "completed",      label: "Completed",      color: "stone" },
+  { value: "cancelled",      label: "Cancelled",      color: "stone" },
+  { value: "missed",         label: "Missed",         color: "red" },
 ];
 
 const STATUS_STYLES: Record<ComputedStatus, string> = {
-  confirmed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  upcoming:  "bg-blue-50 text-blue-700 ring-blue-200",
-  pending:   "bg-amber-50 text-amber-700 ring-amber-200",
-  cancelled: "bg-stone-100 text-stone-600 ring-stone-200",
-  completed: "bg-stone-100 text-stone-700 ring-stone-200",
-  missed:    "bg-red-100 text-red-800 ring-red-300",
+  confirmed:       "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  upcoming:        "bg-blue-50 text-blue-700 ring-blue-200",
+  "starting-soon": "bg-orange-50 text-orange-700 ring-orange-200",
+  live:            "bg-green-50 text-green-700 ring-green-200",
+  pending:         "bg-amber-50 text-amber-700 ring-amber-200",
+  cancelled:       "bg-stone-100 text-stone-600 ring-stone-200",
+  completed:       "bg-stone-100 text-stone-700 ring-stone-200",
+  missed:          "bg-red-100 text-red-800 ring-red-300",
+};
+
+const STATUS_LABELS: Record<ComputedStatus, string> = {
+  confirmed:       "Confirmed",
+  upcoming:        "Upcoming",
+  "starting-soon": "Starting Soon",
+  live:            "Live",
+  pending:         "Pending",
+  cancelled:       "Cancelled",
+  completed:       "Completed",
+  missed:          "Missed",
 };
 
 const formatTime = (iso: string) =>
@@ -49,7 +63,7 @@ export default function DoctorAppointmentsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const refreshAppointments = () => {
+  const refreshAppointments = useCallback(() => {
     try {
       const stored = localStorage.getItem("loggedInUser");
       if (stored) {
@@ -57,13 +71,17 @@ export default function DoctorAppointmentsPage() {
         setMyAppointments(getAllAppointments().filter((a) => a.clinician === user.name));
       }
     } catch { /* ignore */ }
-  };
+  }, []);
 
   useEffect(() => {
     refreshAppointments();
     window.addEventListener("focus", refreshAppointments);
-    return () => window.removeEventListener("focus", refreshAppointments);
-  }, []);
+    const poll = setInterval(refreshAppointments, 30_000);
+    return () => {
+      window.removeEventListener("focus", refreshAppointments);
+      clearInterval(poll);
+    };
+  }, [refreshAppointments]);
 
   const appointmentsWithComputed = useMemo<AptWithComputed[]>(() =>
     myAppointments.map((a) => ({ ...a, _computed: getComputedAppointmentStatus(a) })),
@@ -72,7 +90,8 @@ export default function DoctorAppointmentsPage() {
 
   const counts = useMemo(() => {
     const c: Record<FilterTab, number> = {
-      all: 0, pending: 0, upcoming: 0, confirmed: 0, completed: 0, cancelled: 0, missed: 0,
+      all: 0, pending: 0, upcoming: 0, "starting-soon": 0, live: 0,
+      confirmed: 0, completed: 0, cancelled: 0, missed: 0,
     };
     c.all = appointmentsWithComputed.length;
     appointmentsWithComputed.forEach((a) => { c[a._computed]++; });
@@ -89,7 +108,8 @@ export default function DoctorAppointmentsPage() {
             a.patient.name.toLowerCase().includes(q) ||
             a.reason.toLowerCase().includes(q) ||
             (a.type ?? "").toLowerCase().includes(q) ||
-            a.room.toLowerCase().includes(q);
+            (a.room ?? "").toLowerCase().includes(q) ||
+            (a.location?.name ?? "").toLowerCase().includes(q);
           if (!hit) return false;
         }
         const aptDate = a.startsAt.split("T")[0];
@@ -197,11 +217,11 @@ export default function DoctorAppointmentsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--line)] bg-[var(--canvas)]">
-                    {["#", "Patient", "Date & Time", "Type", "Reason", "Room", "Status", "Payment", ""].map((h, i) => (
+                    {["#", "Patient", "Date & Time", "Mode", "Type", "Reason", "Location", "Status", "Payment", ""].map((h, i) => (
                       <th
                         key={h}
                         className={`px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--muted)] ${
-                          i >= 3 && i <= 5 ? "hidden sm:table-cell" : ""
+                          i >= 4 && i <= 6 ? "hidden sm:table-cell" : ""
                         }`}
                       >
                         {h}
@@ -235,15 +255,38 @@ export default function DoctorAppointmentsPage() {
                         <p className="text-xs text-[var(--muted)]">{formatDate(apt.startsAt)}</p>
                       </td>
 
+                      <td className="px-5 py-3.5">
+                        {apt.appointmentMode === "online" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
+                            <Video size={10} /> Online
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-700 ring-1 ring-inset ring-teal-200">
+                            <Building2 size={10} /> In-person
+                          </span>
+                        )}
+                      </td>
+
                       <td className="hidden sm:table-cell px-5 py-3.5 text-[var(--muted)]">{apt.type ?? "—"}</td>
 
                       <td className="hidden sm:table-cell max-w-[160px] truncate px-5 py-3.5 text-[var(--muted)]">{apt.reason}</td>
 
-                      <td className="hidden sm:table-cell px-5 py-3.5 text-[var(--muted)]">{apt.room}</td>
+                      <td className="hidden sm:table-cell px-5 py-3.5 text-[var(--muted)]">
+                        {apt.appointmentMode === "online" ? (
+                          <span className="text-xs italic text-slate-400">Video Consultation</span>
+                        ) : (
+                          <span className="text-xs">
+                            {apt.location?.name ?? apt.room ?? "—"}
+                            {apt.room && apt.location && (
+                              <span className="block text-[10px] text-stone-400">{apt.room}</span>
+                            )}
+                          </span>
+                        )}
+                      </td>
 
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ring-1 ring-inset ${STATUS_STYLES[apt._computed]}`}>
-                          {apt._computed}
+                          {STATUS_LABELS[apt._computed]}
                         </span>
                       </td>
 

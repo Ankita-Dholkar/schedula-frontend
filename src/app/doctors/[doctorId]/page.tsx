@@ -197,7 +197,12 @@ export default function DoctorBookingPage() {
       reason: reasonForVisit.trim(),
       type: appointmentType,
       appointmentMode,
-      room: appointmentMode === "online" ? "Video Call" : "Room TBD",
+      ...(appointmentMode === "in-person"
+        ? {
+            location: doctor.clinic ?? { name: "Main Campus Clinic" },
+            room: undefined,
+          }
+        : {}),
     });
 
     saveNotification({

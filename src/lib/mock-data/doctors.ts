@@ -12,6 +12,10 @@ export const doctors: Doctor[] = [
     description: "Dr. Prakash Das practices about 7 years of experience in psychological therapy.",
     availableTime: "08:30 AM - 07:00 PM",
     image: "/doctor-1.png",
+    clinic: {
+      name: "Mindwell Wellness Center",
+      address: "12 Serenity Lane, Koramangala, Bengaluru",
+    },
   },
   {
     id: "doc-2",
@@ -22,6 +26,10 @@ export const doctors: Doctor[] = [
     description: "Experienced physician providing patient-focused, compassionate primary care.",
     availableTime: "09:00 AM - 06:00 PM",
     image: "/doctor-2.png",
+    clinic: {
+      name: "City Center Clinic",
+      address: "45 MG Road, Shivajinagar, Pune",
+    },
   },
   {
     id: "doc-3",
@@ -32,6 +40,10 @@ export const doctors: Doctor[] = [
     description: "Specialized in modern skin and dermatology treatments for all skin types.",
     availableTime: "10:00 AM - 05:00 PM",
     image: "/doctor-3.png",
+    clinic: {
+      name: "Westside Skin & Aesthetics",
+      address: "88 Hill Road, Bandra West, Mumbai",
+    },
   },
   {
     id: "doc-4",
@@ -42,8 +54,13 @@ export const doctors: Doctor[] = [
     description: "Experienced cardiologist focused on heart health and preventive cardiology.",
     availableTime: "09:30 AM - 04:30 PM",
     image: "/doctor-4.png",
+    clinic: {
+      name: "HeartCare Specialty Hospital",
+      address: "3 Cardiac Avenue, Jubilee Hills, Hyderabad",
+    },
   },
 ];
+
 
 // Doctor auth accounts — used for doctor login/signup
 // IDs match the doctor profile IDs above so they can be linked
