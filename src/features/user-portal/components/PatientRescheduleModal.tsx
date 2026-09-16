@@ -11,6 +11,7 @@ import { loadPersistedAvailability } from "@/lib/mock-data/availability";
 
 type Props = {
   appointment: Appointment;
+  existingAppointments?: Appointment[];
   onClose: () => void;
   onDone: () => void;
 };
@@ -23,7 +24,7 @@ const formatDate = (iso: string) =>
     year: "numeric",
   }).format(new Date(iso));
 
-/** Get unbooked, valid future slots for a given date from doctor's persisted availability */
+/** Get available slots for a given date, filtering out past/booked slots from availability config */
 function getAvailableSlots(avail: DoctorAvailability | null, dateStr: string): string[] {
   if (!avail || !avail.schedule) return [];
   const schedule = avail.schedule.find((s) => s.date === dateStr);
@@ -40,6 +41,26 @@ function getAvailableSlots(avail: DoctorAvailability | null, dateStr: string): s
     })
     .map((slot) => slot.start)
     .sort();
+}
+
+/** Build a Set of HH:MM times already taken by other appointments on a given date for the same doctor */
+function getTakenSlots(
+  existingAppointments: Appointment[],
+  clinician: string,
+  excludeId: string,
+  dateStr: string
+): Set<string> {
+  const taken = new Set<string>();
+  for (const apt of existingAppointments) {
+    if (apt.id === excludeId) continue;
+    if (apt.clinician !== clinician) continue;
+    if (apt.status === "cancelled" || apt.status === "completed" || apt.status === "missed") continue;
+    if (!apt.startsAt.startsWith(dateStr)) continue;
+    // Extract HH:MM from the ISO string
+    const timePart = apt.startsAt.split("T")[1]?.slice(0, 5);
+    if (timePart) taken.add(timePart);
+  }
+  return taken;
 }
 
 /** Get available dates (active, future, at least one unbooked slot) from doctor's availability */
@@ -85,7 +106,7 @@ function resolveDoctorId(clinicianName: string): string | null {
   return null;
 }
 
-export default function PatientRescheduleModal({ appointment, onClose, onDone }: Props) {
+export default function PatientRescheduleModal({ appointment, existingAppointments = [], onClose, onDone }: Props) {
   const dispatch = useAppDispatch();
   const today = new Date().toISOString().split("T")[0];
 
@@ -116,6 +137,9 @@ export default function PatientRescheduleModal({ appointment, onClose, onDone }:
 
   const availableSlots = getAvailableSlots(availability, selectedDate);
   const hasConfiguredAvailability = availability && availability.schedule.length > 0;
+
+  // Slots already booked by another appointment with the same doctor on the selected date
+  const takenSlots = getTakenSlots(existingAppointments, appointment.clinician, appointment.id, selectedDate);
 
   const handleConfirm = async () => {
     if (!selectedTime) {
@@ -238,20 +262,27 @@ export default function PatientRescheduleModal({ appointment, onClose, onDone }:
             {hasConfiguredAvailability ? (
               availableSlots.length > 0 ? (
                 <div className="grid grid-cols-4 gap-2 max-h-44 overflow-y-auto pr-0.5">
-                  {availableSlots.map((slot) => (
-                    <button
-                      key={slot}
-                      type="button"
-                      onClick={() => setSelectedTime(slot)}
-                      className={`rounded-lg border py-2 text-xs font-medium transition ${
-                        selectedTime === slot
-                          ? "border-[var(--brand)] bg-[var(--brand)] text-white"
-                          : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
-                      }`}
-                    >
-                      {slot}
-                    </button>
-                  ))}
+                  {availableSlots.map((slot) => {
+                    const isTaken = takenSlots.has(slot);
+                    return (
+                      <button
+                        key={slot}
+                        type="button"
+                        disabled={isTaken}
+                        onClick={() => !isTaken && setSelectedTime(slot)}
+                        title={isTaken ? "Already booked" : undefined}
+                        className={`rounded-lg border py-2 text-xs font-medium transition ${
+                          isTaken
+                            ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400 line-through"
+                            : selectedTime === slot
+                            ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                            : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 px-4 py-4 text-center">
@@ -273,20 +304,27 @@ export default function PatientRescheduleModal({ appointment, onClose, onDone }:
                     const now = new Date();
                     return sh > now.getHours() || (sh === now.getHours() && sm > now.getMinutes());
                   })
-                  .map((slot) => (
-                    <button
-                      key={slot}
-                      type="button"
-                      onClick={() => setSelectedTime(slot)}
-                      className={`rounded-lg border py-2 text-xs font-medium transition ${
-                        selectedTime === slot
-                          ? "border-[var(--brand)] bg-[var(--brand)] text-white"
-                          : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
-                      }`}
-                    >
-                      {slot}
-                    </button>
-                  ))}
+                  .map((slot) => {
+                    const isTaken = takenSlots.has(slot);
+                    return (
+                      <button
+                        key={slot}
+                        type="button"
+                        disabled={isTaken}
+                        onClick={() => !isTaken && setSelectedTime(slot)}
+                        title={isTaken ? "Already booked" : undefined}
+                        className={`rounded-lg border py-2 text-xs font-medium transition ${
+                          isTaken
+                            ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400 line-through"
+                            : selectedTime === slot
+                            ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                            : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    );
+                  })}
               </div>
             )}
 

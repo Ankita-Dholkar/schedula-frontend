@@ -18,12 +18,14 @@ import { selectAverageRating, selectDoctorReviews } from "@/store/slices/reviews
 type StoredUser = { id: string; name: string; email: string; role: string };
 
 const statusConfig: Record<AppointmentStatus | "upcoming", { label: string; className: string }> = {
-  confirmed: { label: "Confirmed", className: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
-  upcoming:  { label: "Upcoming",  className: "bg-blue-50 text-blue-700 ring-blue-200" },
-  pending:   { label: "Pending",   className: "bg-amber-50 text-amber-700 ring-amber-200" },
-  cancelled: { label: "Cancelled", className: "bg-stone-100 text-stone-600 ring-stone-200" },
-  completed: { label: "Completed", className: "bg-stone-100 text-stone-700 ring-stone-200" },
-  missed:    { label: "Missed",    className: "bg-red-100 text-red-800 ring-red-300" },
+  confirmed:       { label: "Confirmed",     className: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
+  upcoming:        { label: "Upcoming",      className: "bg-blue-50 text-blue-700 ring-blue-200" },
+  "starting-soon": { label: "Starting Soon", className: "bg-orange-50 text-orange-700 ring-orange-200" },
+  live:            { label: "Live",          className: "bg-green-50 text-green-700 ring-green-200" },
+  pending:         { label: "Pending",       className: "bg-amber-50 text-amber-700 ring-amber-200" },
+  cancelled:       { label: "Cancelled",     className: "bg-stone-100 text-stone-600 ring-stone-200" },
+  completed:       { label: "Completed",     className: "bg-stone-100 text-stone-700 ring-stone-200" },
+  missed:          { label: "Missed",        className: "bg-red-100 text-red-800 ring-red-300" },
 };
 
 const formatTime = (iso: string) =>

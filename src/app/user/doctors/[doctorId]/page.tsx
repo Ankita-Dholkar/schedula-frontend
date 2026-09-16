@@ -182,7 +182,12 @@ export default function UserDoctorBookingPage() {
       reason: reasonForVisit.trim(),
       type: appointmentType,
       appointmentMode,
-      room: appointmentMode === "online" ? "Video Call" : "Room TBD",
+      ...(appointmentMode === "in-person"
+        ? {
+            location: doctor.clinic ?? { name: "Main Campus Clinic" },
+            room: undefined,
+          }
+        : {}),
       consultationFee: CONSULTATION_FEE,
       paymentStatus: "paid",
       transactionId: txId,

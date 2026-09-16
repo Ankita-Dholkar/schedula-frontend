@@ -7,4 +7,9 @@ export type Doctor = {
   description: string;
   availableTime: string;
   image: string;
-};
+  /** Primary clinic where in-person appointments are conducted. */
+  clinic?: {
+    name: string;
+    address?: string;
+  };
+};

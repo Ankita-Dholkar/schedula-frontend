@@ -14,7 +14,9 @@ export const appointments: Appointment[] = [
     status: "completed",
     reason: "Follow-up consultation",
     room: "Room 04",
+    location: { name: "City Center Clinic", address: "45 MG Road, Shivajinagar, Pune" },
     type: "Follow-up",
+    appointmentMode: "in-person",
     prescriptionAvailable: true,
     prescriptionUrl: "#",
     consultationFee: 500,
@@ -32,7 +34,9 @@ export const appointments: Appointment[] = [
     status: "missed",
     reason: "Annual wellness visit",
     room: "Room 04",
+    location: { name: "City Center Clinic", address: "45 MG Road, Shivajinagar, Pune" },
     type: "Check-up",
+    appointmentMode: "in-person",
     consultationFee: 500,
     paymentStatus: "failed",
   },
@@ -45,8 +49,9 @@ export const appointments: Appointment[] = [
     durationMinutes: 30,
     status: "completed",
     reason: "Skin consultation",
-    room: "Room 12",
     type: "Consultation",
+    appointmentMode: "online",
+    consultationStarted: true,
     prescriptionAvailable: false,
     consultationFee: 500,
     paymentStatus: "paid",
@@ -63,7 +68,9 @@ export const appointments: Appointment[] = [
     status: "cancelled",
     reason: "Blood pressure review",
     room: "Room 04",
+    location: { name: "City Center Clinic", address: "45 MG Road, Shivajinagar, Pune" },
     type: "Follow-up",
+    appointmentMode: "in-person",
     consultationFee: 500,
     paymentStatus: "failed",
   },
@@ -77,7 +84,9 @@ export const appointments: Appointment[] = [
     status: "completed",
     reason: "Chest pain evaluation",
     room: "Room 08",
+    location: { name: "HeartCare Specialty Hospital", address: "3 Cardiac Avenue, Jubilee Hills, Hyderabad" },
     type: "Urgent",
+    appointmentMode: "in-person",
     prescriptionAvailable: true,
     prescriptionUrl: "#",
     consultationFee: 500,
@@ -95,7 +104,9 @@ export const appointments: Appointment[] = [
     status: "missed",
     reason: "ECG review",
     room: "Room 08",
+    location: { name: "HeartCare Specialty Hospital", address: "3 Cardiac Avenue, Jubilee Hills, Hyderabad" },
     type: "Follow-up",
+    appointmentMode: "in-person",
     consultationFee: 500,
     paymentStatus: "failed",
   },
@@ -108,8 +119,9 @@ export const appointments: Appointment[] = [
     durationMinutes: 60,
     status: "completed",
     reason: "Therapy session",
-    room: "Room 02",
     type: "Consultation",
+    appointmentMode: "online",
+    consultationStarted: true,
     prescriptionAvailable: true,
     prescriptionUrl: "#",
     consultationFee: 500,
@@ -126,8 +138,10 @@ export const appointments: Appointment[] = [
     durationMinutes: 30,
     status: "cancelled",
     reason: "Acne treatment follow-up",
-    room: "Room 12",
+    room: "Room 02",
+    location: { name: "Westside Skin & Aesthetics", address: "88 Hill Road, Bandra West, Mumbai" },
     type: "Follow-up",
+    appointmentMode: "in-person",
     consultationFee: 500,
     paymentStatus: "failed",
   },
@@ -143,7 +157,9 @@ export const appointments: Appointment[] = [
     status: "confirmed",
     reason: "General check-up",
     room: "Room 04",
+    location: { name: "City Center Clinic", address: "45 MG Road, Shivajinagar, Pune" },
     type: "Check-up",
+    appointmentMode: "in-person",
     consultationFee: 500,
     paymentStatus: "paid",
     transactionId: "DEMO-10500000",
@@ -158,8 +174,8 @@ export const appointments: Appointment[] = [
     durationMinutes: 45,
     status: "confirmed",
     reason: "Fever and fatigue evaluation",
-    room: "Room 04",
     type: "Consultation",
+    appointmentMode: "online",
     consultationFee: 500,
     paymentStatus: "paid",
     transactionId: "DEMO-10510000",
@@ -175,7 +191,9 @@ export const appointments: Appointment[] = [
     status: "confirmed",
     reason: "Palpitations evaluation",
     room: "Room 08",
+    location: { name: "HeartCare Specialty Hospital", address: "3 Cardiac Avenue, Jubilee Hills, Hyderabad" },
     type: "Urgent",
+    appointmentMode: "in-person",
     consultationFee: 500,
     paymentStatus: "paid",
     transactionId: "DEMO-10520000",
@@ -190,8 +208,8 @@ export const appointments: Appointment[] = [
     durationMinutes: 60,
     status: "confirmed",
     reason: "Stress management session",
-    room: "Room 02",
     type: "Consultation",
+    appointmentMode: "online",
     consultationFee: 500,
     paymentStatus: "paid",
     transactionId: "DEMO-10530000",
@@ -206,8 +224,10 @@ export const appointments: Appointment[] = [
     durationMinutes: 30,
     status: "confirmed",
     reason: "Eczema follow-up",
-    room: "Room 12",
+    room: "Room 02",
+    location: { name: "Westside Skin & Aesthetics", address: "88 Hill Road, Bandra West, Mumbai" },
     type: "Follow-up",
+    appointmentMode: "in-person",
     consultationFee: 500,
     paymentStatus: "paid",
     transactionId: "DEMO-10540000",
@@ -225,7 +245,9 @@ export const appointments: Appointment[] = [
     status: "pending",
     reason: "Sports injury review",
     room: "Room 04",
+    location: { name: "City Center Clinic", address: "45 MG Road, Shivajinagar, Pune" },
     type: "Follow-up",
+    appointmentMode: "in-person",
     consultationFee: 500,
     paymentStatus: "pending",
   },
@@ -238,8 +260,8 @@ export const appointments: Appointment[] = [
     durationMinutes: 45,
     status: "pending",
     reason: "Hypertension management",
-    room: "Room 08",
     type: "Check-up",
+    appointmentMode: "online",
     consultationFee: 500,
     paymentStatus: "pending",
   },
@@ -252,8 +274,10 @@ export const appointments: Appointment[] = [
     durationMinutes: 60,
     status: "pending",
     reason: "Anxiety initial consultation",
-    room: "Room 02",
+    room: "Room 01",
+    location: { name: "Mindwell Wellness Center", address: "12 Serenity Lane, Koramangala, Bengaluru" },
     type: "Consultation",
+    appointmentMode: "in-person",
     consultationFee: 500,
     paymentStatus: "pending",
   },
@@ -263,10 +287,13 @@ export const appointments: Appointment[] = [
 // Data helpers
 
 
+
+
 export function getAllAppointments(): Appointment[] {
   let storedAppointments: Appointment[] = [];
   let statuses: Record<string, AppointmentStatus> = {};
   let reschedules: Record<string, { newStartsAt: string; updatedAt: string }> = {};
+  let consultationStartedMap: Record<string, boolean> = {};
   try {
     const raw = localStorage.getItem("bookedAppointments");
     if (raw) storedAppointments = JSON.parse(raw);
@@ -274,6 +301,8 @@ export function getAllAppointments(): Appointment[] {
     if (rawStatuses) statuses = JSON.parse(rawStatuses);
     const rawReschedules = localStorage.getItem("appointmentReschedules");
     if (rawReschedules) reschedules = JSON.parse(rawReschedules);
+    const rawStarted = localStorage.getItem("consultationStarted");
+    if (rawStarted) consultationStartedMap = JSON.parse(rawStarted);
   } catch { /* ignore */ }
 
   const allPrescriptions = getAllPrescriptions();
@@ -285,7 +314,12 @@ export function getAllAppointments(): Appointment[] {
     if (reschedules[apt.id]) {
       result = { ...result, startsAt: reschedules[apt.id].newStartsAt, updatedAt: reschedules[apt.id].updatedAt };
     }
-    
+
+    // Merge persisted consultationStarted flag (set by startConsultation())
+    if (consultationStartedMap[apt.id]) {
+      result = { ...result, consultationStarted: true };
+    }
+
     // Check if dynamic prescription exists
     if (allPrescriptions[apt.id]) {
       result = { ...result, prescriptionAvailable: true, prescriptionUrl: "#" };
@@ -339,14 +373,85 @@ export function saveAppointment(appointment: Appointment) {
   } catch { /* ignore */ }
 }
 
-export function getComputedAppointmentStatus(appointment: Appointment): AppointmentStatus | "upcoming" {
-  if (appointment.status === "confirmed" && new Date(appointment.startsAt).getTime() > Date.now()) {
-    return "upcoming";
+// ─── STARTING_SOON window (ms) ────────────────────────────────────────────────
+const STARTING_SOON_MS = 15 * 60 * 1000; // 15 minutes
+
+export type ComputedStatus = AppointmentStatus | "upcoming" | "starting-soon" | "live";
+
+export function getComputedAppointmentStatus(appointment: Appointment): ComputedStatus {
+  // Terminal statuses are never overridden by time.
+  if (
+    appointment.status === "cancelled" ||
+    appointment.status === "completed" ||
+    appointment.status === "missed"
+  ) {
+    return appointment.status;
   }
+
+  const now = Date.now();
+  const startsAt = new Date(appointment.startsAt).getTime();
+  const endsAt = startsAt + appointment.durationMinutes * 60_000;
+
+  // Appointment is currently live (within the scheduled window)
+  if (now >= startsAt && now <= endsAt) {
+    // Online: if no one joined and time is up → auto-missed on next check
+    // (handled in the live branch — we still show "live" so the join button is shown)
+    return "live";
+  }
+
+  // Appointment window has passed
+  if (now > endsAt) {
+    // Online with no one joining → missed
+    if (appointment.appointmentMode === "online" && !appointment.consultationStarted) {
+      return "missed";
+    }
+    // In-person or started online → fall through to stored status
+    return appointment.status;
+  }
+
+  // Appointment hasn't started yet
+  if (
+    appointment.status === "confirmed" ||
+    appointment.status === "pending"
+  ) {
+    if (startsAt - now <= STARTING_SOON_MS) {
+      return "starting-soon";
+    }
+    return appointment.status === "confirmed" ? "upcoming" : "pending";
+  }
+
   return appointment.status;
 }
 
-// ─── Notifications ────────────────────────────────────────────────────────────
+// ─── Consultation lifecycle helpers ────────────────────────────────────────────
+
+/**
+ * Marks an online appointment as started (sets consultationStarted: true).
+ * Also updates the raw status to "live" for in-progress tracking.
+ */
+export function startConsultation(id: string) {
+  try {
+    // Persist the consultationStarted flag
+    const raw = localStorage.getItem("consultationStarted");
+    const record: Record<string, boolean> = raw ? JSON.parse(raw) : {};
+    record[id] = true;
+    localStorage.setItem("consultationStarted", JSON.stringify(record));
+
+    // Also set the stored status to "live" so the Redux layer picks it up
+    updateAppointmentStatus(id, "live");
+  } catch { /* ignore */ }
+}
+
+/**
+ * Marks an appointment as completed (called from the consultation screen).
+ */
+export function endConsultation(id: string) {
+  try {
+    updateAppointmentStatus(id, "completed");
+  } catch { /* ignore */ }
+}
+
+
 
 export type AppointmentNotification = {
   id: string;
