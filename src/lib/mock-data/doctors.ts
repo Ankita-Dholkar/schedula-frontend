@@ -16,6 +16,7 @@ export const doctors: Doctor[] = [
       name: "Mindwell Wellness Center",
       address: "12 Serenity Lane, Koramangala, Bengaluru",
     },
+    verificationStatus: "verified",
   },
   {
     id: "doc-2",
@@ -30,6 +31,7 @@ export const doctors: Doctor[] = [
       name: "City Center Clinic",
       address: "45 MG Road, Shivajinagar, Pune",
     },
+    verificationStatus: "verified",
   },
   {
     id: "doc-3",
@@ -44,6 +46,7 @@ export const doctors: Doctor[] = [
       name: "Westside Skin & Aesthetics",
       address: "88 Hill Road, Bandra West, Mumbai",
     },
+    verificationStatus: "verified",
   },
   {
     id: "doc-4",
@@ -58,6 +61,7 @@ export const doctors: Doctor[] = [
       name: "HeartCare Specialty Hospital",
       address: "3 Cardiac Avenue, Jubilee Hills, Hyderabad",
     },
+    verificationStatus: "pending",
   },
 ];
 
@@ -138,6 +142,7 @@ export function getAllDoctors(): Doctor[] {
               description: `${name} is a registered doctor on Schedula.`,
               availableTime: "09:00 AM - 05:00 PM",
               image: "", // no image for new registrations — UI falls back to avatar
+              verificationStatus: "pending", // new sign-ups await admin approval
             });
           }
         });

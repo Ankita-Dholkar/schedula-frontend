@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import StoreProvider from "@/store/StoreProvider";
+import ToastContainer from "@/components/ui/ToastContainer";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,7 +27,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <StoreProvider>{children}</StoreProvider>
+        <StoreProvider>
+          {children}
+          <ToastContainer />
+        </StoreProvider>
       </body>
     </html>
   );
