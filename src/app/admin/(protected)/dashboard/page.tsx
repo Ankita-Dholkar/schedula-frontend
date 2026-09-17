@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
-import { mockPatients } from "@/lib/mock-data/patients";
+import { mockPatients, getAllPatients } from "@/lib/mock-data/patients";
 import {
   Users,
   Stethoscope,
@@ -163,9 +163,24 @@ export default function AdminDashboardPage() {
   const doctors = useAppSelector((s) => s.doctors.doctors);
 
   // Derived metrics 
-  const totalDoctors     = doctors.length;
-  const totalPatients    = mockPatients.length;
+  const totalDoctors      = doctors.length;
   const totalAppointments = appointments.length;
+
+  // Total Patients = unique registered patient accounts (static mock + runtime signup)
+  const [totalPatients, setTotalPatients] = useState(mockPatients.length);
+
+  useEffect(() => {
+    const updatePatients = () => {
+      setTotalPatients(getAllPatients().length);
+    };
+    updatePatients();
+    window.addEventListener("storage", updatePatients);
+    window.addEventListener("focus", updatePatients);
+    return () => {
+      window.removeEventListener("storage", updatePatients);
+      window.removeEventListener("focus", updatePatients);
+    };
+  }, []);
 
   const now = new Date();
 
@@ -178,9 +193,11 @@ export default function AdminDashboardPage() {
     () => appointments.filter((a) => a.status === "completed"),
     [appointments]
   );
+
+  // Pending Verifications = doctors awaiting admin approval (source of truth: doctor.verificationStatus)
   const pendingVerifications = useMemo(
-    () => appointments.filter((a) => a.status === "pending").length,
-    [appointments]
+    () => doctors.filter((d) => d.verificationStatus === "pending").length,
+    [doctors]
   );
 
   // Recent data (last 5)
@@ -188,7 +205,16 @@ export default function AdminDashboardPage() {
     () => [...appointments].sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime()).slice(0, 5),
     [appointments]
   );
-  const recentDoctors: Doctor[] = doctors.slice(0, 4);
+
+  // Registered Doctors list = all doctors, sorted verified first, then pending
+  const recentDoctors: Doctor[] = useMemo(
+    () => [...doctors].sort((a, b) => {
+      // verified first, pending last
+      if (a.verificationStatus === b.verificationStatus) return 0;
+      return a.verificationStatus === "verified" ? -1 : 1;
+    }),
+    [doctors]
+  );
 
   // Status breakdown 
   const statusBreakdown = useMemo(() => {
@@ -343,9 +369,15 @@ export default function AdminDashboardPage() {
                     <p className="truncate text-sm font-semibold text-[var(--ink)]">{doc.name}</p>
                     <p className="truncate text-xs text-[var(--muted)]">{doc.specialization}</p>
                   </div>
-                  <span className="ml-auto shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                    Active
-                  </span>
+                  {doc.verificationStatus === "verified" ? (
+                    <span className="ml-auto shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                      Verified
+                    </span>
+                  ) : (
+                    <span className="ml-auto shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                      Pending
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
