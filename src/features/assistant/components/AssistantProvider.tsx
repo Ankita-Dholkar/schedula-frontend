@@ -7,7 +7,7 @@ import AssistantWindow from "./AssistantWindow";
 
 interface AssistantProviderProps {
   /** Pass the portal role directly from the layout. Defaults to 'general' for the public homepage. */
-  portalRole?: "patient" | "doctor" | "general";
+  portalRole?: "patient" | "doctor" | "admin" | "general";
 }
 
 export default function AssistantProvider({ portalRole = "general" }: AssistantProviderProps) {

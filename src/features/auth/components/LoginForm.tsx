@@ -57,7 +57,13 @@ export default function LoginForm() {
       });
 
       setTimeout(() => {
-        window.location.href = user.role === "doctor" ? "/doctor/dashboard" : "/user/doctors";
+        if (user.role === "admin") {
+          window.location.href = "/admin/dashboard";
+        } else if (user.role === "doctor") {
+          window.location.href = "/doctor/dashboard";
+        } else {
+          window.location.href = "/user/doctors";
+        }
       }, 100);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Login failed. Please try again.";
