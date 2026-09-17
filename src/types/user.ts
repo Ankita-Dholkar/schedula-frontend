@@ -1,4 +1,4 @@
-export type Role = "patient" | "doctor";
+export type Role = "patient" | "doctor" | "admin";
 
 export type BaseUser = {
   id: string;
@@ -20,4 +20,8 @@ export type DoctorUser = BaseUser & {
   licenseNumber?: string;
 };
 
-export type User = PatientUser | DoctorUser;
+export type AdminUser = BaseUser & {
+  role: Role;
+};
+
+export type User = PatientUser | DoctorUser | AdminUser;

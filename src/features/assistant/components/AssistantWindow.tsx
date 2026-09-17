@@ -9,7 +9,7 @@ import {
   DOCTOR_SUGGESTED_QUESTIONS,
 } from "@/features/assistant/data/schedula-knowledge";
 
-type AssistantRole = "patient" | "doctor" | "general";
+type AssistantRole = "patient" | "doctor" | "admin" | "general";
 
 interface AssistantWindowProps {
   role: AssistantRole;
