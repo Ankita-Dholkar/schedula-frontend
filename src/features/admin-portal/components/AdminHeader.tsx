@@ -1,24 +1,31 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Menu, LogOut, ChevronDown, ShieldCheck } from "lucide-react";
+import { useAppDispatch } from "@/store/hooks";
+import { clearAdminUser } from "@/store/slices/adminAuthSlice";
+
+const STORAGE_KEY = "loggedInAdmin";
 
 type Props = {
   onMenuToggle: () => void;
 };
 
 export default function AdminHeader({ onMenuToggle }: Props) {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [adminName, setAdminName] = useState("Admin");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Read admin name from localStorage
+  // Read admin name from dedicated loggedInAdmin key
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("loggedInUser");
+      const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const user = JSON.parse(raw);
-        if (user?.name) setAdminName(user.name);
+        const admin = JSON.parse(raw);
+        if (admin?.name) setAdminName(admin.name);
       }
     } catch {
       /* ignore */
@@ -37,8 +44,11 @@ export default function AdminHeader({ onMenuToggle }: Props) {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("loggedInUser");
-    window.location.href = "/login";
+    // Clear admin session from localStorage and Redux
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    dispatch(clearAdminUser());
+    setDropdownOpen(false);
+    router.replace("/admin/login");
   };
 
   // Get initials for the avatar

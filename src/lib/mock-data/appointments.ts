@@ -1,4 +1,4 @@
-import type { Appointment, AppointmentStatus } from "@/types/appointment";
+﻿import type { Appointment, AppointmentStatus } from "@/types/appointment";
 import { getAllPrescriptions } from "./prescriptions";
 import { getAllPayments } from "./payments";
 
@@ -373,7 +373,7 @@ export function saveAppointment(appointment: Appointment) {
   } catch { /* ignore */ }
 }
 
-// ─── STARTING_SOON window (ms) ────────────────────────────────────────────────
+//STARTING_SOON window 
 const STARTING_SOON_MS = 15 * 60 * 1000; // 15 minutes
 
 export type ComputedStatus = AppointmentStatus | "upcoming" | "starting-soon" | "live";
@@ -423,7 +423,7 @@ export function getComputedAppointmentStatus(appointment: Appointment): Computed
   return appointment.status;
 }
 
-// ─── Consultation lifecycle helpers ────────────────────────────────────────────
+//Consultation lifecycle helpers
 
 /**
  * Marks an online appointment as started (sets consultationStarted: true).

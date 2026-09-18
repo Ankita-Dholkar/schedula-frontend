@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { Appointment } from "@/types/appointment";
 import type { Doctor } from "@/types/doctor";
+import Pagination from "@/components/ui/Pagination";
 
 
 function formatDate(iso: string) {
@@ -206,15 +207,29 @@ export default function AdminDashboardPage() {
     [appointments]
   );
 
-  // Registered Doctors list = all doctors, sorted verified first, then pending
+  // Registered Doctors list = all doctors, sorted approved first, then pending
   const recentDoctors: Doctor[] = useMemo(
     () => [...doctors].sort((a, b) => {
-      // verified first, pending last
-      if (a.verificationStatus === b.verificationStatus) return 0;
-      return a.verificationStatus === "verified" ? -1 : 1;
+      const isApproved = (d: Doctor) => d.verificationStatus === "approved" || d.verificationStatus === "verified";
+      if (isApproved(a) === isApproved(b)) return 0;
+      return isApproved(a) ? -1 : 1;
     }),
     [doctors]
   );
+
+  const DOCTOR_PAGE_SIZE = 5;
+  const [doctorPage, setDoctorPage] = useState(1);
+  const totalDoctorPages = Math.max(1, Math.ceil(recentDoctors.length / DOCTOR_PAGE_SIZE));
+  const paginatedDoctors = useMemo(() => {
+    const start = (doctorPage - 1) * DOCTOR_PAGE_SIZE;
+    return recentDoctors.slice(start, start + DOCTOR_PAGE_SIZE);
+  }, [recentDoctors, doctorPage]);
+
+  useEffect(() => {
+    if (doctorPage > totalDoctorPages) {
+      setDoctorPage(totalDoctorPages);
+    }
+  }, [doctorPage, totalDoctorPages]);
 
   // Status breakdown 
   const statusBreakdown = useMemo(() => {
@@ -307,18 +322,18 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
 
         {/* Recent Appointments — 3 cols */}
-        <div className="lg:col-span-3 rounded-2xl border border-[var(--line)] bg-white shadow-sm overflow-hidden">
+        <div className="lg:col-span-3 rounded-2xl border border-[var(--line)] bg-white shadow-sm overflow-hidden flex flex-col">
           <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
             <h2 className="text-sm font-semibold text-[var(--ink)]">Recent Appointments</h2>
             <span className="text-xs text-[var(--muted)]">Last 5</span>
           </div>
           {recentAppointments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-[var(--muted)]">
+            <div className="flex flex-1 flex-col items-center justify-center py-12 text-[var(--muted)]">
               <AlertCircle size={28} className="mb-2 text-[var(--line)]" />
               <p className="text-sm">No appointments yet.</p>
             </div>
           ) : (
-            <ul className="divide-y divide-[var(--line)]">
+            <ul className="divide-y divide-[var(--line)] flex-1">
               {recentAppointments.map((apt) => (
                 <li key={apt.id} className="flex items-start justify-between gap-3 px-5 py-3.5 hover:bg-[var(--canvas)] transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
@@ -342,19 +357,19 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Recent Doctors — 2 cols */}
-        <div className="lg:col-span-2 rounded-2xl border border-[var(--line)] bg-white shadow-sm overflow-hidden">
+        <div className="lg:col-span-2 rounded-2xl border border-[var(--line)] bg-white shadow-sm overflow-hidden flex flex-col">
           <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
             <h2 className="text-sm font-semibold text-[var(--ink)]">Registered Doctors</h2>
             <span className="text-xs text-[var(--muted)]">{totalDoctors} total</span>
           </div>
-          {recentDoctors.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-[var(--muted)]">
+          {paginatedDoctors.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center py-12 text-[var(--muted)]">
               <XCircle size={28} className="mb-2 text-[var(--line)]" />
               <p className="text-sm">No doctors found.</p>
             </div>
           ) : (
-            <ul className="divide-y divide-[var(--line)]">
-              {recentDoctors.map((doc) => (
+            <ul className="divide-y divide-[var(--line)] flex-1">
+              {paginatedDoctors.map((doc) => (
                 <li key={doc.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-[var(--canvas)] transition-colors">
                   {/* Avatar or image */}
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white overflow-hidden">
@@ -369,9 +384,13 @@ export default function AdminDashboardPage() {
                     <p className="truncate text-sm font-semibold text-[var(--ink)]">{doc.name}</p>
                     <p className="truncate text-xs text-[var(--muted)]">{doc.specialization}</p>
                   </div>
-                  {doc.verificationStatus === "verified" ? (
+                  {doc.verificationStatus === "approved" || doc.verificationStatus === "verified" ? (
                     <span className="ml-auto shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                      Verified
+                      Approved
+                    </span>
+                  ) : doc.verificationStatus === "rejected" ? (
+                    <span className="ml-auto shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
+                      Rejected
                     </span>
                   ) : (
                     <span className="ml-auto shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
@@ -381,6 +400,19 @@ export default function AdminDashboardPage() {
                 </li>
               ))}
             </ul>
+          )}
+          {totalDoctorPages > 1 && (
+            <div className="mt-auto flex items-center justify-between border-t border-[var(--line)] px-4 py-2.5 bg-slate-50/60">
+              <span className="text-xs text-[var(--muted)]">
+                Page {doctorPage} of {totalDoctorPages}
+              </span>
+              <Pagination
+                currentPage={doctorPage}
+                totalPages={totalDoctorPages}
+                onPageChange={setDoctorPage}
+                maxButtons={3}
+              />
+            </div>
           )}
         </div>
       </div>

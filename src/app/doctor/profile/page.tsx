@@ -7,6 +7,8 @@ import AvailabilityManager from "@/features/doctor-portal/components/Availabilit
 import { mockDoctors, doctors as profileDoctors } from "@/lib/mock-data/doctors";
 import { getDoctorAvailability, loadPersistedAvailability } from "@/lib/mock-data/availability";
 import type { DoctorAvailability } from "@/types/availability";
+import DoctorVerificationAlert from "@/features/doctor-portal/components/DoctorVerificationAlert";
+import { useAppSelector } from "@/store/hooks";
 
 type StoredUser = {
   id: string;
@@ -69,6 +71,10 @@ export default function DoctorProfilePage() {
   });
   const [availability, setAvailability] = useState<DoctorAvailability | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Verification status from Redux doctors slice
+  const allDoctors = useAppSelector((s) => s.doctors.doctors);
+  const thisDoctor = allDoctors.find((d) => d.id === doctorId || d.name === profileData.name);
 
   useEffect(() => {
     try {
@@ -169,6 +175,15 @@ export default function DoctorProfilePage() {
             Manage your personal details and set your weekly appointment availability.
           </p>
         </div>
+
+        {/* Verification Alert */}
+        {doctorId && (
+          <DoctorVerificationAlert
+            doctorId={doctorId}
+            verificationStatus={thisDoctor?.verificationStatus}
+            rejectionReason={thisDoctor?.rejectionReason}
+          />
+        )}
 
         <div className="space-y-6">
           {/* Section 1 — Profile Details */}

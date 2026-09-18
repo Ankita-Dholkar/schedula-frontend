@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { CheckCircle2, ArrowLeft, Stethoscope, Video, Building2, FileText, CreditCard } from "lucide-react";
+import { CheckCircle2, ArrowLeft, Stethoscope, Video, Building2, FileText, CreditCard, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { UserCircle2 } from "lucide-react";
 
@@ -375,7 +375,15 @@ export default function UserDoctorBookingPage() {
                 )}
               </div>
               <div className="flex min-w-0 flex-1 flex-col justify-center">
-                <h1 className="truncate text-[18px] font-semibold text-[var(--ink)] sm:text-[21px]">{doctor.name}</h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="truncate text-[18px] font-semibold text-[var(--ink)] sm:text-[21px]">{doctor.name}</h1>
+                  {(doctor.verificationStatus === "approved" || doctor.verificationStatus === "verified") && (
+                    <div className="flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5">
+                      <ShieldCheck size={12} className="text-emerald-600" />
+                      <span className="text-[10px] font-bold text-emerald-700">Verified Doctor</span>
+                    </div>
+                  )}
+                </div>
                 <p className="mt-1 text-sm text-[var(--brand)]">{doctor.specialization}</p>
                 <p className="mt-1.5 text-sm text-[var(--muted)]">{doctor.experience}+ Years Experience</p>
                 <span className="mt-2 inline-block w-fit rounded-md bg-emerald-50 px-2 py-1 text-[11px] text-emerald-700">{doctor.availability}</span>

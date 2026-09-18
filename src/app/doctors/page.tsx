@@ -17,6 +17,8 @@ export default function DoctorsPage() {
   }, []);
 
   const filteredDoctors = allDoctors.filter((doctor) => {
+    // Patients only see active doctors
+    if ((doctor.status ?? "active") === "inactive") return false;
     const query = searchQuery.trim().toLowerCase();
     if (!query) return true;
     return (
@@ -24,6 +26,7 @@ export default function DoctorsPage() {
       doctor.specialization.toLowerCase().includes(query)
     );
   });
+
 
   return (
     <main className="min-h-screen bg-[#F8F9FB] px-3 py-5 sm:px-6 sm:py-8 lg:px-10 lg:py-10">

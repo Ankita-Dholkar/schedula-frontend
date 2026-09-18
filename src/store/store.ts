@@ -1,5 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
+import adminAuthReducer from "./slices/adminAuthSlice";
 import appointmentsReducer from "./slices/appointmentsSlice";
 import availabilityReducer from "./slices/availabilitySlice";
 import prescriptionsReducer from "./slices/prescriptionsSlice";
@@ -12,6 +13,7 @@ import { persistPayments } from "@/lib/mock-data/payments";
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    adminAuth: adminAuthReducer,
     appointments: appointmentsReducer,
     availability: availabilityReducer,
     prescriptions: prescriptionsReducer,
