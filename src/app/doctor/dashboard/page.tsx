@@ -14,6 +14,7 @@ import AppointmentDetailPanel from "@/features/doctor-portal/components/Appointm
 import RescheduleCalendarModal from "@/features/doctor-portal/components/RescheduleCalendarModal";
 import { useAppSelector } from "@/store/hooks";
 import { selectAverageRating, selectDoctorReviews } from "@/store/slices/reviewsSlice";
+import DoctorVerificationAlert from "@/features/doctor-portal/components/DoctorVerificationAlert";
 
 type StoredUser = { id: string; name: string; email: string; role: string };
 
@@ -48,6 +49,12 @@ export default function DoctorDashboardPage() {
   const avgRating = useAppSelector((state) => selectAverageRating(state, doctorKey));
   const allReviews = useAppSelector((state) => selectDoctorReviews(state, doctorKey));
   const totalReviews = allReviews.length;
+
+  // Verification status for this doctor (read from Redux doctors slice)
+  const allDoctors = useAppSelector((s) => s.doctors.doctors);
+  const thisDoctor = allDoctors.find((d) => d.id === doctorId || d.name === doctorName);
+  const doctorVerifStatus   = thisDoctor?.verificationStatus;
+  const doctorRejectionReason = thisDoctor?.rejectionReason;
 
   const todayStr = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
@@ -111,6 +118,15 @@ export default function DoctorDashboardPage() {
       <DoctorPortalHeader title="Dashboard" />
 
       <main className="flex-1 px-6 py-6">
+        {/* Verification Status Alert */}
+        {doctorId && (
+          <DoctorVerificationAlert
+            doctorId={doctorId}
+            verificationStatus={doctorVerifStatus}
+            rejectionReason={doctorRejectionReason}
+          />
+        )}
+
         {/* Welcome */}
         <div className="mb-6">
           <p className="text-xs font-medium uppercase tracking-wider text-[var(--brand)]">{today}</p>

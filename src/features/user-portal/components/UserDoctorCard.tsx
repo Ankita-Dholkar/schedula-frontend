@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { UserCircle2 } from "lucide-react";
+import { UserCircle2, ShieldCheck } from "lucide-react";
 import type { Doctor } from "@/types/doctor";
 
 type Props = {
@@ -34,9 +34,17 @@ export default function UserDoctorCard({ doctor, priority = false }: Props) {
 
         {/* Doctor Information */}
         <div className="min-w-0 flex-1 py-1">
-          <h2 className="truncate text-[16px] font-semibold text-[var(--ink)] sm:text-[17px]">
-            {doctor.name}
-          </h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="truncate text-[16px] font-semibold text-[var(--ink)] sm:text-[17px]">
+              {doctor.name}
+            </h2>
+            {(doctor.verificationStatus === "approved" || doctor.verificationStatus === "verified") && (
+              <div title="Verified Doctor" className="shrink-0 flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-1.5 py-0.5">
+                <ShieldCheck size={11} className="text-emerald-600" />
+                <span className="text-[9px] font-bold text-emerald-700">Verified</span>
+              </div>
+            )}
+          </div>
           <p className="mt-1.5 text-[12px] text-[var(--brand)]">{doctor.specialization}</p>
           <span className="mt-1.5 inline-block rounded bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700">
             {doctor.availability}

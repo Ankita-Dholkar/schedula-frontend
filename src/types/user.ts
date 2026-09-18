@@ -21,7 +21,8 @@ export type DoctorUser = BaseUser & {
 };
 
 export type AdminUser = BaseUser & {
-  role: Role;
+  role: "admin";
+  isActive: boolean;
 };
 
 export type User = PatientUser | DoctorUser | AdminUser;

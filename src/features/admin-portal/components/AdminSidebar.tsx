@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -18,6 +18,11 @@ import {
   X,
   Stethoscope,
 } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { clearAdminUser } from "@/store/slices/adminAuthSlice";
+import { useMemo } from "react";
+
+const STORAGE_KEY = "loggedInAdmin";
 
 type NavItem = {
   label: string;
@@ -36,9 +41,9 @@ const navGroups: { title: string; items: NavItem[] }[] = [
   {
     title: "Users",
     items: [
-      { label: "Doctors", href: "/admin/doctors", icon: Stethoscope, implemented: false },
-      { label: "Doctor Verification", href: "/admin/doctor-verification", icon: UserCheck, implemented: false },
-      { label: "Patients", href: "/admin/patients", icon: Users, implemented: false },
+      { label: "Doctors",             href: "/admin/doctors",              icon: Stethoscope, implemented: true  },
+      { label: "Doctor Verification", href: "/admin/doctor-verification",  icon: UserCheck,   implemented: true  },
+      { label: "Patients",            href: "/admin/patients",             icon: Users,       implemented: false },
     ],
   },
   {
@@ -68,10 +73,18 @@ type Props = {
 
 export default function AdminSidebar({ open, onClose }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  // Pending verification count for the sidebar badge
+  const doctors = useAppSelector((s) => s.doctors.doctors);
+  const pendingCount = useMemo(() => doctors.filter((d) => d.verificationStatus === "pending").length, [doctors]);
 
   const handleLogout = () => {
-    localStorage.removeItem("loggedInUser");
-    window.location.href = "/login";
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    dispatch(clearAdminUser());
+    onClose();
+    router.replace("/admin/login");
   };
 
   return (
@@ -157,10 +170,17 @@ export default function AdminSidebar({ open, onClose }: Props) {
                         aria-current={isActive ? "page" : undefined}
                       >
                         <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
-                        {label}
+                        <span className="flex-1">{label}</span>
+                        {/* Live pending count badge — only on Doctor Verification */}
+                        {href === "/admin/doctor-verification" && pendingCount > 0 && (
+                          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 text-[10px] font-bold text-white leading-none">
+                            {pendingCount}
+                          </span>
+                        )}
                       </Link>
                     </li>
                   );
+
                 })}
               </ul>
             </div>

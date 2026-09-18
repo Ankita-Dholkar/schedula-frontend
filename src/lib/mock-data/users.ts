@@ -8,9 +8,10 @@ export const mockAdminUsers: AdminUser[] = [
     id: "admin-001",
     name: "Super Admin",
     email: "admin@schedula.com",
-    mobile: "0000000000",
+    mobile: "9000000001",
     password: "admin123",
     role: "admin",
+    isActive: true,
   },
 ];
 
