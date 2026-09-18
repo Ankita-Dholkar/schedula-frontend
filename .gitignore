@@ -44,6 +44,4 @@ next-env.d.ts
 eslint_output.txt
 eslint.json
 
-# AI agents
-AGENTS.md
-CLAUDE.md
+
