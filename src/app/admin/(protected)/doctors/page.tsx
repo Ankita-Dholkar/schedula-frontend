@@ -56,8 +56,8 @@ export default function AdminDoctorsPage() {
   const metrics = useMemo(() => {
     return {
       total:    doctors.length,
-      active:   doctors.filter((d) => (d.status ?? "active") === "active").length,
-      inactive: doctors.filter((d) => d.status === "inactive").length,
+      active:   doctors.filter((d) => d.status === "active").length,
+      inactive: doctors.filter((d) => (d.status ?? "inactive") === "inactive").length,
       pending:  doctors.filter((d) => d.verificationStatus === "pending").length,
     };
   }, [doctors]);
@@ -75,8 +75,8 @@ export default function AdminDoctorsPage() {
 
       const matchStatus =
         statusFilter === "all" ||
-        (statusFilter === "active"   && (doc.status ?? "active") === "active") ||
-        (statusFilter === "inactive" && doc.status === "inactive");
+        (statusFilter === "active"   && doc.status === "active") ||
+        (statusFilter === "inactive" && (doc.status ?? "inactive") === "inactive");
 
       const matchVerif =
         verifFilter === "all" ||
@@ -229,8 +229,10 @@ export default function AdminDoctorsPage() {
               </thead>
               <tbody>
                 {paginated.map((doc) => {
-                  const isActive = (doc.status ?? "active") === "active";
+                  const isActive = doc.status === "active";
                   const isRejected = doc.verificationStatus === "rejected";
+                  const isPending = doc.verificationStatus === "pending";
+                  const cannotActivate = !isActive && (isRejected || isPending);
                   return (
                     <tr key={doc.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--canvas)] transition-colors">
                       {/* Doctor */}
@@ -287,16 +289,22 @@ export default function AdminDoctorsPage() {
                             View Profile
                           </button>
                           <button
-                            disabled={!isActive && isRejected}
+                            disabled={cannotActivate}
                             onClick={() => setConfirmDialog({ doctor: doc, mode: isActive ? "deactivate" : "activate" })}
                             className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
                               isActive
                                 ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
-                                : isRejected
+                                : cannotActivate
                                 ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
                                 : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                             }`}
-                            title={!isActive && isRejected ? "Cannot activate a doctor whose application is rejected" : undefined}
+                            title={
+                              !isActive && isPending
+                                ? "Cannot activate account while verification is pending approval"
+                                : !isActive && isRejected
+                                ? "Cannot activate a doctor whose application is rejected"
+                                : undefined
+                            }
                           >
                             {isActive ? "Deactivate" : "Activate"}
                           </button>

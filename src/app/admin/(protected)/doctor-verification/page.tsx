@@ -239,8 +239,8 @@ export default function DoctorVerificationPage() {
                   {/* Status badges — always visible and separate */}
                   <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-end">
                     <Badge
-                      variant={(doc.status ?? "active") === "active" ? "active" : "inactive"}
-                      label={(doc.status ?? "active") === "active" ? "Active" : "Inactive"}
+                      variant={doc.status === "active" ? "active" : "inactive"}
+                      label={doc.status === "active" ? "Active" : "Inactive"}
                       dot
                     />
                     <Badge

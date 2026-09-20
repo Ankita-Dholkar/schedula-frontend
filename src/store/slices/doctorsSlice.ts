@@ -75,6 +75,7 @@ export const doctorsSlice = createSlice({
         return {
           ...doc,
           verificationStatus: status,
+          ...(status === "approved" ? { status: "active" as const } : {}),
           ...(status === "rejected" ? { status: "inactive" as const } : {}),
           rejectionReason: status === "rejected" ? (rejectionReason ?? "") : undefined,
           rejectionDate: status === "rejected" ? new Date().toISOString() : undefined,
@@ -92,7 +93,11 @@ export const doctorsSlice = createSlice({
     ) => {
       const { id, status } = action.payload;
       const target = state.doctors.find((d) => d.id === id);
-      if (status === "active" && target?.verificationStatus === "rejected") {
+      // Cannot activate an account if doctor is pending review or rejected
+      if (
+        status === "active" &&
+        (target?.verificationStatus === "rejected" || target?.verificationStatus === "pending")
+      ) {
         return;
       }
       updateDoctorAccountStatus(id, status);
@@ -115,6 +120,7 @@ export const doctorsSlice = createSlice({
         return {
           ...doc,
           verificationStatus: "pending",
+          status: "inactive",
           rejectionReason: undefined,
           rejectionDate: undefined,
           submittedAt: now,

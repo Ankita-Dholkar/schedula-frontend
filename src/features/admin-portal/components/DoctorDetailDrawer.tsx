@@ -24,7 +24,7 @@ function verificationVariant(status?: Doctor["verificationStatus"]): BadgeVarian
 }
 
 function accountVariant(status?: Doctor["status"]): BadgeVariant {
-  return status === "inactive" ? "inactive" : "active";
+  return status === "active" ? "active" : "inactive";
 }
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value?: string }) {
@@ -54,7 +54,8 @@ export default function DoctorDetailDrawer({ doctor, open, onClose }: Props) {
   const isPending  = doctor.verificationStatus === "pending";
   const isApproved = doctor.verificationStatus === "approved" || doctor.verificationStatus === "verified";
   const isRejected = doctor.verificationStatus === "rejected";
-  const isActive   = (doctor.status ?? "active") === "active";
+  const isActive   = doctor.status === "active";
+  const cannotActivate = isRejected || isPending;
 
   const handleConfirm = async (reason?: string) => {
     if (!dialog) return;
@@ -128,7 +129,7 @@ export default function DoctorDetailDrawer({ doctor, open, onClose }: Props) {
               <div className="mt-2 flex flex-wrap gap-2">
                 <Badge
                   variant={accountVariant(doctor.status)}
-                  label={(doctor.status ?? "active").charAt(0).toUpperCase() + (doctor.status ?? "active").slice(1)}
+                  label={doctor.status === "active" ? "Active" : "Inactive"}
                   dot
                 />
                 <Badge
@@ -239,16 +240,27 @@ export default function DoctorDetailDrawer({ doctor, open, onClose }: Props) {
             </button>
           ) : (
             <button
-              disabled={isRejected}
-              title={isRejected ? "Cannot activate account while verification is rejected" : undefined}
+              disabled={cannotActivate}
+              title={
+                isPending
+                  ? "Cannot activate account until doctor verification is approved"
+                  : isRejected
+                  ? "Cannot activate account while verification is rejected"
+                  : undefined
+              }
               onClick={() => setDialog("activate")}
               className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors ${
-                isRejected
+                cannotActivate
                   ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
                   : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
               }`}
             >
-              <Power size={15} /> {isRejected ? "Account Inactive (Application Rejected)" : "Activate Account"}
+              <Power size={15} />{" "}
+              {isPending
+                ? "Account Inactive (Pending Approval)"
+                : isRejected
+                ? "Account Inactive (Application Rejected)"
+                : "Activate Account"}
             </button>
           )}
         </div>
