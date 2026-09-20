@@ -133,7 +133,7 @@ export default function AdminLoginForm() {
                   if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: "" }));
                   if (error) setError(null);
                 }}
-                placeholder="admin@schedula.com"
+                placeholder="ADMIN EMAIL"
                 className={`h-11 w-full rounded-lg border bg-slate-800 px-4 text-sm text-white outline-none placeholder:text-slate-600 transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)] ${
                   fieldErrors.email ? "border-red-500" : "border-slate-700"
                 }`}

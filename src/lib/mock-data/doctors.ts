@@ -150,7 +150,7 @@ export const doctors: Doctor[] = [
       name: "HeartCare Specialty Hospital",
       address: "3 Cardiac Avenue, Jubilee Hills, Hyderabad",
     },
-    status: "active",
+    status: "inactive",
     verificationStatus: "pending",
     submittedAt: "2026-09-10T14:20:00Z",
     documents: [
@@ -273,7 +273,7 @@ export function updateDoctorVerification(
   overrides[id] = {
     ...overrides[id],
     verificationStatus: status,
-    ...(status === "rejected" ? { status: "inactive" } : {}),
+    status: status === "approved" ? "active" : "inactive",
     rejectionReason: status === "rejected" ? (reason ?? "") : undefined,
     rejectionDate: status === "rejected" ? new Date().toISOString() : undefined,
   };
@@ -289,8 +289,8 @@ export function updateDoctorAccountStatus(
   const currentVerif =
     overrides[id]?.verificationStatus ??
     doctors.find((d) => d.id === id)?.verificationStatus;
-  // If doctor's application is rejected, account status cannot be activated
-  if (status === "active" && currentVerif === "rejected") {
+  // If doctor's application is rejected or pending, account status cannot be activated
+  if (status === "active" && (currentVerif === "rejected" || currentVerif === "pending")) {
     return;
   }
   overrides[id] = { ...overrides[id], status };
@@ -303,6 +303,7 @@ export function resubmitDoctorVerification(id: string) {
   overrides[id] = {
     ...overrides[id],
     verificationStatus: "pending",
+    status: "inactive",
     rejectionReason: undefined,
     rejectionDate: undefined,
     submittedAt: new Date().toISOString(),
@@ -347,7 +348,7 @@ export function getAllDoctors(): Doctor[] {
               description: `${name} is a registered doctor on Schedula.`,
               availableTime: "09:00 AM - 05:00 PM",
               image: "",
-              status: "active",
+              status: "inactive",
               verificationStatus: "pending", // new sign-ups await admin approval
               submittedAt: new Date().toISOString(),
             });
@@ -373,8 +374,8 @@ export function getAllDoctors(): Doctor[] {
         }
       : { ...doctor };
 
-    // If a doctor's application is rejected, their account status must be inactive
-    if (merged.verificationStatus === "rejected") {
+    // If a doctor's verification is pending or rejected, their account status must be inactive
+    if (merged.verificationStatus === "pending" || merged.verificationStatus === "rejected") {
       merged.status = "inactive";
     }
 
