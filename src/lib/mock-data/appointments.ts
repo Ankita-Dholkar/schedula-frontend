@@ -1,4 +1,4 @@
-﻿import type { Appointment, AppointmentStatus } from "@/types/appointment";
+import type { Appointment, AppointmentStatus } from "@/types/appointment";
 import { getAllPrescriptions } from "./prescriptions";
 import { getAllPayments } from "./payments";
 
@@ -73,6 +73,9 @@ export const appointments: Appointment[] = [
     appointmentMode: "in-person",
     consultationFee: 500,
     paymentStatus: "failed",
+    cancellationReason: "Schedule conflict",
+    cancelledAt: "2026-08-29T11:30:00Z",
+    cancelledBy: "patient",
   },
   {
     id: "apt-1046",
@@ -144,6 +147,9 @@ export const appointments: Appointment[] = [
     appointmentMode: "in-person",
     consultationFee: 500,
     paymentStatus: "failed",
+    cancellationReason: "Found another specialist closer to home",
+    cancelledAt: "2026-08-30T16:00:00Z",
+    cancelledBy: "patient",
   },
 
   // ── Future / upcoming (confirmed + future date) ──────────────────
@@ -180,6 +186,10 @@ export const appointments: Appointment[] = [
     paymentStatus: "paid",
     transactionId: "DEMO-10510000",
     paymentMethod: "upi",
+    isRescheduled: true,
+    originalStartsAt: "2026-09-03T11:00:00",
+    rescheduledAt: "2026-09-02T09:15:00Z",
+    rescheduleReason: "Doctor unavailable on original date",
   },
   {
     id: "apt-1052",
@@ -292,7 +302,7 @@ export const appointments: Appointment[] = [
 export function getAllAppointments(): Appointment[] {
   let storedAppointments: Appointment[] = [];
   let statuses: Record<string, AppointmentStatus> = {};
-  let reschedules: Record<string, { newStartsAt: string; updatedAt: string }> = {};
+  let reschedules: Record<string, { newStartsAt: string; updatedAt: string; rescheduleReason?: string; originalStartsAt?: string }> = {};
   let consultationStartedMap: Record<string, boolean> = {};
   try {
     const raw = localStorage.getItem("bookedAppointments");
@@ -312,7 +322,16 @@ export function getAllAppointments(): Appointment[] {
   return all.map((apt) => {
     let result = statuses[apt.id] ? { ...apt, status: statuses[apt.id] } : apt;
     if (reschedules[apt.id]) {
-      result = { ...result, startsAt: reschedules[apt.id].newStartsAt, updatedAt: reschedules[apt.id].updatedAt };
+      const r = reschedules[apt.id];
+      result = {
+        ...result,
+        startsAt: r.newStartsAt,
+        updatedAt: r.updatedAt,
+        isRescheduled: true,
+        originalStartsAt: r.originalStartsAt ?? result.originalStartsAt ?? apt.startsAt,
+        rescheduledAt: r.updatedAt,
+        rescheduleReason: r.rescheduleReason ?? result.rescheduleReason,
+      };
     }
 
     // Merge persisted consultationStarted flag (set by startConsultation())
@@ -355,11 +374,27 @@ export function updateAppointmentStatus(id: string, status: AppointmentStatus) {
   } catch { /* ignore */ }
 }
 
-export function rescheduleAppointment(id: string, newStartsAt: string) {
+export function rescheduleAppointment(
+  id: string,
+  newStartsAt: string,
+  opts?: { rescheduleReason?: string; originalStartsAt?: string }
+) {
   try {
     const raw = localStorage.getItem("appointmentReschedules");
-    const reschedules: Record<string, { newStartsAt: string; updatedAt: string }> = raw ? JSON.parse(raw) : {};
-    reschedules[id] = { newStartsAt, updatedAt: new Date().toISOString() };
+    const reschedules: Record<string, {
+      newStartsAt: string;
+      updatedAt: string;
+      rescheduleReason?: string;
+      originalStartsAt?: string;
+    }> = raw ? JSON.parse(raw) : {};
+    // Only record originalStartsAt the first time (if not already rescheduled before)
+    const existing = reschedules[id];
+    reschedules[id] = {
+      newStartsAt,
+      updatedAt: new Date().toISOString(),
+      rescheduleReason: opts?.rescheduleReason,
+      originalStartsAt: existing?.originalStartsAt ?? opts?.originalStartsAt ?? undefined,
+    };
     localStorage.setItem("appointmentReschedules", JSON.stringify(reschedules));
   } catch { /* ignore */ }
 }

@@ -11,6 +11,20 @@ export type BaseUser = {
 
 export type PatientUser = BaseUser & {
   role: "patient";
+  /** Admin-managed account status. Defaults to "active". */
+  accountStatus?: "active" | "inactive";
+  gender?: "Male" | "Female" | "Other";
+  age?: number;
+  dateOfBirth?: string;
+  bloodGroup?: string;
+  address?: string;
+  /** ISO timestamp of when the patient registered. */
+  registeredAt?: string;
+  emergencyContact?: {
+    name: string;
+    phone: string;
+    relation: string;
+  };
 };
 
 export type DoctorUser = BaseUser & {
