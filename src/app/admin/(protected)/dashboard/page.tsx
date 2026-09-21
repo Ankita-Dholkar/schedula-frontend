@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { useAppSelector } from "@/store/hooks";
 import { mockPatients, getAllPatients } from "@/lib/mock-data/patients";
 import {
@@ -252,8 +253,12 @@ export default function AdminDashboardPage() {
       {/* ── Top metric cards ── */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard label="Total Doctors"      value={totalDoctors}       icon={Stethoscope}  iconColor="text-[var(--brand)]"    iconBg="bg-teal-50" />
-        <MetricCard label="Total Patients"     value={totalPatients}      icon={Users}        iconColor="text-violet-600"         iconBg="bg-violet-50" />
-        <MetricCard label="Total Appointments" value={totalAppointments}  icon={CalendarDays} iconColor="text-blue-600"           iconBg="bg-blue-50" />
+        <Link href="/admin/patients" className="group rounded-2xl ring-0 hover:ring-2 hover:ring-violet-300 transition-all">
+          <MetricCard label="Total Patients" value={totalPatients} icon={Users} iconColor="text-violet-600" iconBg="bg-violet-50" />
+        </Link>
+        <Link href="/admin/appointments" className="group rounded-2xl ring-0 hover:ring-2 hover:ring-blue-300 transition-all">
+          <MetricCard label="Total Appointments" value={totalAppointments} icon={CalendarDays} iconColor="text-blue-600" iconBg="bg-blue-50" />
+        </Link>
         <MetricCard label="Pending Verifications" value={pendingVerifications} icon={UserCheck} iconColor="text-amber-600"       iconBg="bg-amber-50" />
       </div>
 

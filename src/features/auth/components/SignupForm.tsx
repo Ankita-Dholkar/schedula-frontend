@@ -36,6 +36,8 @@ interface PatientForm {
   email: string;
   mobile: string;
   password: string;
+  dob?: string;
+  gender?: string;
 }
 
 type DoctorErrors = Partial<Record<keyof DoctorForm, string>>;
@@ -75,7 +77,14 @@ export default function SignupForm() {
   const [doctorErrors, setDoctorErrors] = useState<DoctorErrors>({});
 
   /* ── Patient form state ── */
-  const [patientForm, setPatientForm] = useState<PatientForm>({ name: "", email: "", mobile: "", password: "" });
+  const [patientForm, setPatientForm] = useState<PatientForm>({
+    name: "",
+    email: "",
+    mobile: "",
+    password: "",
+    dob: "",
+    gender: "",
+  });
   const [patientErrors, setPatientErrors] = useState<PatientErrors>({});
   const [patShowPassword, setPatShowPassword] = useState(false);
 
@@ -88,7 +97,7 @@ export default function SignupForm() {
     }
   };
 
-  const handlePatientChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePatientChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setPatientForm(prev => ({ ...prev, [name]: value }));
     if (patientErrors[name as keyof PatientForm]) {
@@ -188,7 +197,13 @@ export default function SignupForm() {
     if (!validatePatient()) return;
     setIsLoading(true);
     try {
-      const user = await signup({ ...patientForm, role: "patient" } as any);
+      const user = await signup({
+        ...patientForm,
+        role: "patient",
+        dob: patientForm.dob || undefined,
+        dateOfBirth: patientForm.dob || undefined,
+        gender: patientForm.gender || undefined,
+      } as any);
       setToast({ message: "Account created! Redirecting to login…", type: "success" });
       setTimeout(() => {
         window.location.href = `/login?email=${encodeURIComponent(user.email)}`;
@@ -481,6 +496,33 @@ export default function SignupForm() {
                   <input name="mobile" type="text" value={patientForm.mobile} onChange={handlePatientChange}
                     placeholder="10-digit number" className={inputClass(patientErrors.mobile)} />
                   {patientErrors.mobile && <p className="mt-1 text-xs text-red-500">{patientErrors.mobile}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Date of Birth</label>
+                  <input
+                    name="dob"
+                    type="date"
+                    value={patientForm.dob || ""}
+                    onChange={handlePatientChange}
+                    className={inputClass()}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Gender</label>
+                  <select
+                    name="gender"
+                    value={patientForm.gender || ""}
+                    onChange={handlePatientChange}
+                    className={inputClass()}
+                  >
+                    <option value="">Select</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                  </select>
                 </div>
               </div>
               <div>

@@ -13,7 +13,7 @@ export type PatientUser = BaseUser & {
   role: "patient";
   /** Admin-managed account status. Defaults to "active". */
   accountStatus?: "active" | "inactive";
-  gender?: "Male" | "Female" | "Other";
+  gender?: "Male" | "Female" | "Other" | "Prefer not to say" | string;
   age?: number;
   dateOfBirth?: string;
   bloodGroup?: string;

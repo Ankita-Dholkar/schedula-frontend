@@ -35,9 +35,6 @@ export const login = async ({ emailOrMobile, password }: LoginCredentials) => {
   }
 
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
+    ...user,
   };
 };

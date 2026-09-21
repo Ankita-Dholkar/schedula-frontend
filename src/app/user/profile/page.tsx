@@ -24,6 +24,8 @@ type StoredUser = {
   phone?: string;
   role: string;
   dateOfBirth?: string;
+  gender?: string;
+  age?: number | string;
 };
 
 type BaseForm = {
@@ -31,6 +33,8 @@ type BaseForm = {
   email: string;
   phone: string;
   dateOfBirth: string;
+  gender: string;
+  age: string;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -80,7 +84,7 @@ function EditInput({ value, onChange, type = "text", placeholder }: { value: str
   );
 }
 
-// ── Tag list (for conditions & allergies) ─────────────────────────────────────
+//Tag list (for conditions & allergies) 
 
 function TagListEditor({
   items,
@@ -206,7 +210,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
 
 export default function UserProfilePage() {
   const [authUser, setAuthUser] = useState<StoredUser | null>(null);
-  const [baseForm, setBaseForm] = useState<BaseForm>({ name: "", email: "", phone: "", dateOfBirth: "" });
+  const [baseForm, setBaseForm] = useState<BaseForm>({ name: "", email: "", phone: "", dateOfBirth: "", gender: "", age: "" });
   const [health, setHealth] = useState<UserHealthProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -221,12 +225,44 @@ export default function UserProfilePage() {
       const raw = localStorage.getItem("loggedInUser");
       if (!raw) return;
       const user: StoredUser = JSON.parse(raw);
-      setAuthUser(user);
+
+      // Check registeredUsers if fields were omitted from session
+      let extraData: Record<string, any> = {};
+      try {
+        const storedReg = localStorage.getItem("registeredUsers");
+        const regList: any[] = storedReg ? JSON.parse(storedReg) : [];
+        const foundReg = regList.find(
+          (u) => u.id === user.id || (u.email && u.email.toLowerCase() === user.email.toLowerCase())
+        );
+        if (foundReg) {
+          extraData = foundReg;
+        }
+      } catch {
+        /* ignore */
+      }
+
+      const gender = user.gender || extraData.gender || "";
+      const dateOfBirth = user.dateOfBirth || extraData.dateOfBirth || extraData.dob || "";
+      const phone = user.mobile || user.phone || extraData.mobile || extraData.phone || "";
+      const computedAge = calcAge(dateOfBirth);
+      const ageStr = user.age !== undefined && user.age !== "" ? String(user.age) : (computedAge !== null ? String(computedAge) : (extraData.age ? String(extraData.age) : ""));
+
+      const hydratedUser: StoredUser = {
+        ...user,
+        gender,
+        dateOfBirth,
+        mobile: phone,
+        age: ageStr,
+      };
+
+      setAuthUser(hydratedUser);
       setBaseForm({
-        name: user.name ?? "",
-        email: user.email ?? "",
-        phone: user.mobile ?? user.phone ?? "",
-        dateOfBirth: user.dateOfBirth ?? "",
+        name: user.name ?? extraData.name ?? "",
+        email: user.email ?? extraData.email ?? "",
+        phone,
+        dateOfBirth,
+        gender,
+        age: ageStr,
       });
 
       // Health profile — keyed by userId
@@ -253,10 +289,47 @@ export default function UserProfilePage() {
     setIsSaving(true);
     await new Promise((r) => setTimeout(r, 500));
 
+    const computedAge = calcAge(baseForm.dateOfBirth);
+    const resolvedAge = baseForm.age ? Number(baseForm.age) : (computedAge ?? undefined);
+
     // Persist auth fields
-    const updatedUser: StoredUser = { ...authUser, name: baseForm.name, email: baseForm.email, mobile: baseForm.phone, dateOfBirth: baseForm.dateOfBirth };
+    const updatedUser: StoredUser = {
+      ...authUser,
+      name: baseForm.name,
+      email: baseForm.email,
+      mobile: baseForm.phone,
+      dateOfBirth: baseForm.dateOfBirth,
+      gender: baseForm.gender,
+      age: resolvedAge,
+    };
     localStorage.setItem("loggedInUser", JSON.stringify(updatedUser));
     setAuthUser(updatedUser);
+
+    // Sync to registeredUsers so admin portal and global lists stay up to date
+    try {
+      const stored = localStorage.getItem("registeredUsers");
+      if (stored) {
+        const list: any[] = JSON.parse(stored);
+        const nextList = list.map((u) => {
+          if (u.id === authUser.id || (u.email && u.email.toLowerCase() === authUser.email.toLowerCase())) {
+            return {
+              ...u,
+              name: baseForm.name,
+              email: baseForm.email,
+              mobile: baseForm.phone,
+              dateOfBirth: baseForm.dateOfBirth,
+              dob: baseForm.dateOfBirth,
+              gender: baseForm.gender,
+              age: resolvedAge,
+            };
+          }
+          return u;
+        });
+        localStorage.setItem("registeredUsers", JSON.stringify(nextList));
+      }
+    } catch {
+      /* ignore */
+    }
 
     // Persist health profile under userId
     saveUserHealthProfile({ ...health, userId: authUser.id });
@@ -269,7 +342,16 @@ export default function UserProfilePage() {
 
   const handleCancel = () => {
     if (!authUser) return;
-    setBaseForm({ name: authUser.name ?? "", email: authUser.email ?? "", phone: authUser.mobile ?? authUser.phone ?? "", dateOfBirth: authUser.dateOfBirth ?? "" });
+    const computedAge = calcAge(authUser.dateOfBirth ?? "");
+    const ageStr = authUser.age !== undefined && authUser.age !== "" ? String(authUser.age) : (computedAge !== null ? String(computedAge) : "");
+    setBaseForm({
+      name: authUser.name ?? "",
+      email: authUser.email ?? "",
+      phone: authUser.mobile ?? authUser.phone ?? "",
+      dateOfBirth: authUser.dateOfBirth ?? "",
+      gender: authUser.gender ?? "",
+      age: ageStr,
+    });
     const profile = getUserHealthProfile(authUser.id) ?? getDefaultProfile(authUser.id);
     setHealth(profile);
     setIsEditing(false);
@@ -289,7 +371,9 @@ export default function UserProfilePage() {
   }
 
   const initials = baseForm.name ? baseForm.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "U";
-  const age = calcAge(baseForm.dateOfBirth);
+  const displayAge = baseForm.age
+    ? Number(baseForm.age)
+    : (calcAge(baseForm.dateOfBirth) ?? null);
 
   return (
     <>
@@ -315,11 +399,16 @@ export default function UserProfilePage() {
                     <Droplets size={12} /> {health.bloodGroup}
                   </span>
                 )}
-                {age && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600">
-                    {age} yrs
+                {baseForm.gender && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600">
+                    {baseForm.gender}
                   </span>
                 )}
+                {typeof displayAge === "number" && !isNaN(displayAge) && displayAge > 0 ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600">
+                    {displayAge} yrs
+                  </span>
+                ) : null}
               </div>
             </div>
             {!isEditing ? (
@@ -381,7 +470,67 @@ export default function UserProfilePage() {
               {isEditing ? <EditInput type="tel" value={baseForm.phone} onChange={(v) => setBaseForm((f) => ({ ...f, phone: v }))} placeholder="+91 XXXXX XXXXX" /> : <ViewValue value={baseForm.phone} />}
             </FieldRow>
             <FieldRow icon={<Calendar size={16} />} label="Date of Birth">
-              {isEditing ? <EditInput type="date" value={baseForm.dateOfBirth} onChange={(v) => setBaseForm((f) => ({ ...f, dateOfBirth: v }))} /> : <ViewValue value={formatDOB(baseForm.dateOfBirth)} />}
+              {isEditing ? (
+                <EditInput
+                  type="date"
+                  value={baseForm.dateOfBirth}
+                  onChange={(v) => {
+                    const newAge = calcAge(v);
+                    setBaseForm((f) => ({
+                      ...f,
+                      dateOfBirth: v,
+                      age: newAge !== null ? String(newAge) : f.age,
+                    }));
+                  }}
+                />
+              ) : (
+                <ViewValue value={formatDOB(baseForm.dateOfBirth)} />
+              )}
+            </FieldRow>
+            <FieldRow icon={<User size={16} />} label="Age">
+              {isEditing ? (
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="120"
+                    value={baseForm.age}
+                    onChange={(e) => setBaseForm((f) => ({ ...f, age: e.target.value }))}
+                    placeholder="e.g. 28"
+                    className="h-10 w-28 rounded-lg border border-[var(--line)] bg-[var(--canvas)] px-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
+                  />
+                  <span className="text-xs text-[var(--muted)]">
+                    {baseForm.dateOfBirth ? "(Auto-calculated from DOB or edit manually)" : "(Auto-calculated if DOB is provided)"}
+                  </span>
+                </div>
+              ) : (
+                <ViewValue
+                  value={
+                    baseForm.age
+                      ? `${baseForm.age} yrs`
+                      : calcAge(baseForm.dateOfBirth)
+                      ? `${calcAge(baseForm.dateOfBirth)} yrs`
+                      : undefined
+                  }
+                />
+              )}
+            </FieldRow>
+            <FieldRow icon={<User size={16} />} label="Gender">
+              {isEditing ? (
+                <select
+                  value={baseForm.gender}
+                  onChange={(e) => setBaseForm((f) => ({ ...f, gender: e.target.value }))}
+                  className="h-10 w-full rounded-lg border border-[var(--line)] bg-[var(--canvas)] px-3 text-sm outline-none focus:border-[var(--brand)]"
+                >
+                  <option value="">Select gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+              ) : (
+                <ViewValue value={baseForm.gender} />
+              )}
             </FieldRow>
           </SectionCard>
 

@@ -43,13 +43,13 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     items: [
       { label: "Doctors",             href: "/admin/doctors",              icon: Stethoscope, implemented: true  },
       { label: "Doctor Verification", href: "/admin/doctor-verification",  icon: UserCheck,   implemented: true  },
-      { label: "Patients",            href: "/admin/patients",             icon: Users,       implemented: false },
+      { label: "Patients",            href: "/admin/patients",             icon: Users,       implemented: true  },
     ],
   },
   {
     title: "Operations",
     items: [
-      { label: "Appointments", href: "/admin/appointments", icon: CalendarDays, implemented: false },
+      { label: "Appointments", href: "/admin/appointments", icon: CalendarDays, implemented: true  },
       { label: "Payments", href: "/admin/payments", icon: CreditCard, implemented: false },
       { label: "Reviews", href: "/admin/reviews", icon: Star, implemented: false },
     ],
