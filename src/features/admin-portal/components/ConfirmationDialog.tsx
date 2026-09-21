@@ -4,13 +4,16 @@ import { useState } from "react";
 import { AlertTriangle, ShieldCheck, ShieldOff, Power, PowerOff } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 
-type Mode = "approve" | "reject" | "activate" | "deactivate";
+type Mode = "approve" | "reject" | "activate" | "deactivate" | "activate_patient" | "deactivate_patient";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   mode: Mode;
-  doctorName: string;
+  /** Name of the entity (doctor or patient) being acted on. */
+  entityName?: string;
+  /** @deprecated Use entityName instead. */
+  doctorName?: string;
   onConfirm: (rejectionReason?: string) => void;
   loading?: boolean;
 };
@@ -59,6 +62,24 @@ const CONFIG: Record<Mode, {
     confirmLabel: "Activate",
     confirmClass: "bg-emerald-600 hover:bg-emerald-700 text-white",
   },
+  activate_patient: {
+    title: "Activate Patient Account",
+    description: "This will re-enable the patient account, allowing the patient to book and manage appointments again.",
+    icon: Power,
+    iconBg: "bg-emerald-50",
+    iconColor: "text-emerald-600",
+    confirmLabel: "Activate",
+    confirmClass: "bg-emerald-600 hover:bg-emerald-700 text-white",
+  },
+  deactivate_patient: {
+    title: "Deactivate Patient Account",
+    description: "This will suspend the patient account. Existing appointment history is preserved and will not be affected.",
+    icon: PowerOff,
+    iconBg: "bg-amber-50",
+    iconColor: "text-amber-600",
+    confirmLabel: "Deactivate",
+    confirmClass: "bg-amber-600 hover:bg-amber-700 text-white",
+  },
   deactivate: {
     title: "Deactivate Doctor Account",
     description: "This will hide the doctor from patient search and prevent new bookings. Existing appointments are not affected.",
@@ -74,13 +95,16 @@ export default function ConfirmationDialog({
   open,
   onClose,
   mode,
+  entityName,
   doctorName,
   onConfirm,
   loading = false,
 }: Props) {
-  const [reason, setReason] = useState("");
+  // Support legacy doctorName prop
+  const name = entityName ?? doctorName ?? "";
   const cfg = CONFIG[mode];
   const Icon = cfg.icon;
+  const [reason, setReason] = useState("");
 
   const isRejectMode = mode === "reject";
   const reasonTrimmed = reason.trim();
@@ -102,7 +126,7 @@ export default function ConfirmationDialog({
       open={open}
       onClose={handleClose}
       title={cfg.title}
-      description={`Doctor: ${doctorName}`}
+      description={`Patient / Doctor: ${name}`}
       maxWidth="max-w-md"
       footer={
         <div className="flex items-center justify-end gap-3">
