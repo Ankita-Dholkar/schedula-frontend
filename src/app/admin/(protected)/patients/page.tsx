@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Users, UserCheck, UserX, UserPlus,
-  Search, X, RefreshCw,
+  Search, X,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -66,6 +66,22 @@ function MetricCard({
   );
 }
 
+function getStoredPage(key: string): number {
+  if (typeof window === "undefined") return 1;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const urlP = parseInt(params.get("page") || "", 10);
+    if (!isNaN(urlP) && urlP >= 1) return urlP;
+
+    const saved = sessionStorage.getItem(key);
+    const savedP = saved ? parseInt(saved, 10) : 1;
+    if (!isNaN(savedP) && savedP >= 1) return savedP;
+  } catch {
+    /* ignore */
+  }
+  return 1;
+}
+
 //Main Page
 
 export default function AdminPatientsPage() {
@@ -77,7 +93,36 @@ export default function AdminPatientsPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState<number>(() => getStoredPage("admin_patients_page"));
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage);
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem("admin_patients_page", String(newPage));
+        const params = new URLSearchParams(window.location.search);
+        params.set("page", String(newPage));
+        window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  // Sync client on mount with URL/sessionStorage
+  useEffect(() => {
+    const p = getStoredPage("admin_patients_page");
+    if (p !== page) {
+      setPage(p);
+    }
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("page") !== String(p)) {
+        params.set("page", String(p));
+        window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+      }
+    }
+  }, []);
 
   const [drawerPatient, setDrawerPatient] = useState<PatientUser | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -153,8 +198,22 @@ export default function AdminPatientsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Reset page on filter change
-  useEffect(() => { setPage(1); }, [search, statusFilter]);
+  // Reset page on filter change (skip initial mount to preserve URL page)
+  const isFirstMount = useRef(true);
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    handlePageChange(1);
+  }, [search, statusFilter, handlePageChange]);
+
+  // Only clamp AFTER data has loaded and settled
+  useEffect(() => {
+    if (!loading && filtered.length > 0 && page > totalPages) {
+      handlePageChange(totalPages);
+    }
+  }, [loading, filtered.length, page, totalPages, handlePageChange]);
 
   //Confirm action
   const handleConfirm = async () => {
@@ -176,20 +235,11 @@ export default function AdminPatientsPage() {
     <div className="p-5 lg:p-7 space-y-6 max-w-7xl mx-auto">
 
       {/* Page Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)]">Patient Management</h1>
-          <p className="mt-0.5 text-sm text-[var(--muted)]">
-            Manage all registered patient accounts — account status and profile details.
-          </p>
-        </div>
-        <button
-          onClick={load}
-          className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors"
-          title="Refresh patient data"
-        >
-          <RefreshCw size={14} /> Refresh
-        </button>
+      <div>
+        <h1 className="text-xl font-bold text-[var(--ink)]">Patient Management</h1>
+        <p className="mt-0.5 text-sm text-[var(--muted)]">
+          Manage all registered patient accounts — account status and profile details.
+        </p>
       </div>
 
       {/* Metric Cards */}
@@ -409,7 +459,7 @@ export default function AdminPatientsPage() {
                 <Pagination
                   currentPage={page}
                   totalPages={totalPages}
-                  onPageChange={setPage}
+                  onPageChange={handlePageChange}
                 />
               </div>
             )}

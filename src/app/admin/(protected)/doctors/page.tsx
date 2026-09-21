@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Stethoscope, Users, UserCheck, UserX, Search, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { refreshDoctors, setDoctorAccountStatus, setDoctorVerificationStatus } from "@/store/slices/doctorsSlice";
@@ -31,6 +31,22 @@ function verificationLabel(status?: Doctor["verificationStatus"]) {
   return "—";
 }
 
+function getStoredPage(key: string): number {
+  if (typeof window === "undefined") return 1;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const urlP = parseInt(params.get("page") || "", 10);
+    if (!isNaN(urlP) && urlP >= 1) return urlP;
+
+    const saved = sessionStorage.getItem(key);
+    const savedP = saved ? parseInt(saved, 10) : 1;
+    if (!isNaN(savedP) && savedP >= 1) return savedP;
+  } catch {
+    /* ignore */
+  }
+  return 1;
+}
+
 export default function AdminDoctorsPage() {
   const dispatch = useAppDispatch();
   const doctors = useAppSelector((s) => s.doctors.doctors);
@@ -39,7 +55,37 @@ export default function AdminDoctorsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [verifFilter, setVerifFilter] = useState<VerifFilter>("all");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState<number>(() => getStoredPage("admin_doctors_page"));
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage);
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem("admin_doctors_page", String(newPage));
+        const params = new URLSearchParams(window.location.search);
+        params.set("page", String(newPage));
+        window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  // Sync client on mount with URL/sessionStorage
+  useEffect(() => {
+    const p = getStoredPage("admin_doctors_page");
+    if (p !== page) {
+      setPage(p);
+    }
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("page") !== String(p)) {
+        params.set("page", String(p));
+        window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+      }
+    }
+  }, []);
+
   const [drawerDoctor, setDrawerDoctor] = useState<Doctor | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     doctor: Doctor;
@@ -62,7 +108,7 @@ export default function AdminDoctorsPage() {
     };
   }, [doctors]);
 
-  // ── Filtered list ────────────────────────────────────────────────────
+  // Filtered list 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return doctors.filter((doc) => {
@@ -91,8 +137,22 @@ export default function AdminDoctorsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Reset page on filter change
-  useEffect(() => { setPage(1); }, [search, statusFilter, verifFilter]);
+  // Reset page on filter change (skip initial mount to preserve URL page)
+  const isFirstMount = useRef(true);
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    handlePageChange(1);
+  }, [search, statusFilter, verifFilter, handlePageChange]);
+
+  // Only clamp AFTER data has loaded and settled
+  useEffect(() => {
+    if (!loading && filtered.length > 0 && page > totalPages) {
+      handlePageChange(totalPages);
+    }
+  }, [loading, filtered.length, page, totalPages, handlePageChange]);
 
   const handleConfirm = async (reason?: string) => {
     if (!confirmDialog) return;
@@ -323,7 +383,7 @@ export default function AdminDoctorsPage() {
               Showing <strong className="text-[var(--ink)]">{(page - 1) * PAGE_SIZE + 1}</strong>–<strong className="text-[var(--ink)]">{Math.min(page * PAGE_SIZE, filtered.length)}</strong> of <strong className="text-[var(--ink)]">{filtered.length}</strong> doctors
             </p>
             {totalPages > 1 && (
-              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+              <Pagination currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
             )}
           </div>
         </div>

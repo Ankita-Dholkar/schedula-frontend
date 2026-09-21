@@ -1,4 +1,5 @@
 import type { PatientUser } from "@/types/user";
+import { getUserHealthProfile } from "./userProfiles";
 
 const ACCOUNT_STATUS_KEY = "patientAccountStatuses";
 
@@ -295,6 +296,15 @@ function getAccountStatusOverrides(): Record<string, "active" | "inactive"> {
   }
 }
 
+function calculateAge(dob?: string): number | undefined {
+  if (!dob) return undefined;
+  const birth = new Date(dob);
+  if (isNaN(birth.getTime())) return undefined;
+  const diff = Date.now() - birth.getTime();
+  const age = Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
+  return age >= 0 ? age : undefined;
+}
+
 // ── Data access ────────────────────────────────────────────────────────────────
 
 /**
@@ -302,16 +312,26 @@ function getAccountStatusOverrides(): Record<string, "active" | "inactive"> {
  * at runtime (stored in localStorage.registeredUsers), then applies persisted
  * accountStatus overrides from `patientAccountStatuses`.
  *
- * - New registrations from the signup flow appear automatically.
+ * - New registrations from the signup flow appear automatically with demographics.
+ * - Profile updates (gender, DOB, blood group, emergency contact) are synced.
  * - Unique accounts are guaranteed by id and email.
  * - Default accountStatus is "active" for all patients.
  * - Safe to call inside useEffect / client components.
  */
 export function getAllPatients(): PatientUser[] {
-  const result: PatientUser[] = mockPatients.map((p) => ({ ...p, accountStatus: p.accountStatus ?? "active" }));
+  let result: PatientUser[] = mockPatients.map((p) => ({ ...p, accountStatus: p.accountStatus ?? "active" }));
   if (typeof window === "undefined") return result;
 
   try {
+    let activeSessionUser: Record<string, unknown> | null = null;
+    try {
+      const logged = localStorage.getItem("loggedInUser");
+      if (logged) activeSessionUser = JSON.parse(logged);
+    } catch {
+      /* ignore */
+    }
+    const sessionUser = activeSessionUser;
+
     // Merge runtime-registered patients from signup flow
     const stored = localStorage.getItem("registeredUsers");
     if (stored) {
@@ -321,23 +341,116 @@ export function getAllPatients(): PatientUser[] {
         .forEach((u) => {
           const id = (u.id as string) || `pat-${u.email}`;
           const email = ((u.email as string) || "").toLowerCase();
-          const exists = result.some(
+          const existsIndex = result.findIndex(
             (p) => p.id === id || (email && p.email.toLowerCase() === email)
           );
-          if (!exists) {
-            result.push({
-              id,
-              name: (u.name as string) || "Patient",
-              email: (u.email as string) || "",
-              mobile: (u.mobile as string) || "",
-              password: (u.password as string) || "",
-              role: "patient",
-              accountStatus: "active",
-              registeredAt: (u.registeredAt as string) || new Date().toISOString(),
-            });
+
+          const isCurrentLoggedIn = Boolean(
+            sessionUser &&
+              (sessionUser.id === id ||
+                (email && (sessionUser.email as string)?.toLowerCase() === email))
+          );
+
+          const rawDOB =
+            (isCurrentLoggedIn ? (sessionUser?.dateOfBirth as string) : undefined) ||
+            (u.dateOfBirth as string) ||
+            (u.dob as string) ||
+            undefined;
+
+          const rawGender =
+            (isCurrentLoggedIn ? (sessionUser?.gender as PatientUser["gender"]) : undefined) ||
+            (u.gender as PatientUser["gender"]) ||
+            undefined;
+
+          const hp = getUserHealthProfile(id);
+
+          const bloodGroup =
+            hp?.bloodGroup ||
+            (u.bloodGroup as string) ||
+            undefined;
+
+          const emergencyContact = hp?.emergencyContactName
+            ? {
+                name: hp.emergencyContactName,
+                phone: hp.emergencyContactPhone,
+                relation: hp.emergencyContactRelation,
+              }
+            : (u.emergencyContact as PatientUser["emergencyContact"]) || undefined;
+
+          const age = calculateAge(rawDOB) ?? (u.age as number) ?? undefined;
+
+          const patientObj: PatientUser = {
+            id,
+            name:
+              (isCurrentLoggedIn ? (sessionUser?.name as string) : null) ||
+              (u.name as string) ||
+              "Patient",
+            email: (u.email as string) || "",
+            mobile:
+              (isCurrentLoggedIn ? ((sessionUser?.mobile as string) || (sessionUser?.phone as string)) : null) ||
+              (u.mobile as string) ||
+              (u.phone as string) ||
+              "",
+            password: (u.password as string) || "",
+            role: "patient",
+            accountStatus: "active",
+            gender: rawGender,
+            dateOfBirth: rawDOB,
+            age,
+            bloodGroup,
+            emergencyContact,
+            address: (u.address as string) || undefined,
+            registeredAt: (u.registeredAt as string) || new Date().toISOString(),
+          };
+
+          if (existsIndex >= 0) {
+            // Merge updated demographic and profile fields while preserving account status
+            result[existsIndex] = {
+              ...result[existsIndex],
+              ...patientObj,
+              accountStatus: result[existsIndex].accountStatus,
+            };
+          } else {
+            result.push(patientObj);
           }
         });
     }
+
+    // Enhance all patients (including static mock accounts) with any saved health profiles or session updates
+    result = result.map((p) => {
+      const isCurrentLoggedIn = Boolean(
+        sessionUser &&
+          (sessionUser.id === p.id ||
+            (p.email && (sessionUser.email as string)?.toLowerCase() === p.email.toLowerCase()))
+      );
+
+      const rawDOB =
+        (isCurrentLoggedIn ? (sessionUser?.dateOfBirth as string) : undefined) ||
+        p.dateOfBirth;
+
+      const rawGender =
+        (isCurrentLoggedIn ? (sessionUser?.gender as PatientUser["gender"]) : undefined) ||
+        p.gender;
+
+      const hp = getUserHealthProfile(p.id);
+      const computedAge = calculateAge(rawDOB) ?? p.age;
+
+
+      return {
+        ...p,
+        gender: rawGender,
+        dateOfBirth: rawDOB,
+        age: computedAge,
+        bloodGroup: hp?.bloodGroup || p.bloodGroup,
+        emergencyContact: hp?.emergencyContactName
+          ? {
+              name: hp.emergencyContactName,
+              phone: hp.emergencyContactPhone,
+              relation: hp.emergencyContactRelation,
+            }
+          : p.emergencyContact,
+      };
+    });
   } catch {
     /* Return merged static + override list if localStorage is unavailable */
   }
@@ -348,3 +461,4 @@ export function getAllPatients(): PatientUser[] {
     overrides[p.id] !== undefined ? { ...p, accountStatus: overrides[p.id] } : p
   );
 }
+
