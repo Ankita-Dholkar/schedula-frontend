@@ -9,6 +9,7 @@ import reviewsReducer from "./slices/reviewsSlice";
 import paymentsReducer from "./slices/paymentsSlice";
 import toastReducer from "./slices/toastSlice";
 import patientsReducer from "./slices/patientsSlice";
+import adminNotificationsReducer from "./slices/adminNotificationsSlice";
 import { persistPayments } from "@/lib/mock-data/payments";
 
 export const store = configureStore({
@@ -23,6 +24,7 @@ export const store = configureStore({
     payments: paymentsReducer,
     toast: toastReducer,
     patients: patientsReducer,
+    adminNotifications: adminNotificationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

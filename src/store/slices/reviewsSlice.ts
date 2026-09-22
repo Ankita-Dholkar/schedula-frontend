@@ -43,23 +43,63 @@ export const reviewsSlice = createSlice({
       state.reviews.push(action.payload);
       persistReviews(state.reviews);
     },
+
+    /**
+     * Toggles the isHidden flag on a review.
+     * Hidden reviews are excluded from all public-facing doctor/patient views.
+     * Admin can toggle visibility; persists to localStorage.
+     */
+    toggleHideReview: (state, action: PayloadAction<{ reviewId: string; adminId?: string }>) => {
+      const review = state.reviews.find((r) => r.id === action.payload.reviewId);
+      if (!review) return;
+      review.isHidden = !review.isHidden;
+      review.moderatedAt = new Date().toISOString();
+      review.moderatedBy = action.payload.adminId ?? "admin";
+      persistReviews(state.reviews);
+    },
+
+    /**
+     * Marks a review as reported with a reason.
+     * Reported reviews appear in the Admin moderation queue.
+     */
+    reportReview: (
+      state,
+      action: PayloadAction<{ reviewId: string; reason: string; reportedBy?: string }>
+    ) => {
+      const review = state.reviews.find((r) => r.id === action.payload.reviewId);
+      if (!review) return;
+      review.isReported = true;
+      review.reportReason = action.payload.reason;
+      review.reportedAt = new Date().toISOString();
+      review.reportedBy = action.payload.reportedBy ?? "patient";
+      persistReviews(state.reviews);
+    },
   },
 });
 
-export const { hydrateReviews, addReview } = reviewsSlice.actions;
+export const { hydrateReviews, addReview, toggleHideReview, reportReview } = reviewsSlice.actions;
 export default reviewsSlice.reducer;
 
 // ─── Selectors ────────────────────────────────────────────────────────────────
 
 const selectAllReviews = (state: RootState) => state.reviews.reviews;
 
+/** All reviews visible to the public — excludes hidden reviews. */
+const selectPublicReviews = createSelector(
+  selectAllReviews,
+  (reviews) => reviews.filter((r) => !r.isHidden)
+);
+
+/** All reviews accessible to admins (includes hidden & reported). */
+export const selectAllReviewsForAdmin = selectAllReviews;
+
 /**
- * Returns all reviews for a doctor.
+ * Returns all PUBLIC reviews for a doctor.
  * Matches by doctorId when available; falls back to doctorName for mock data compatibility.
  * (doctorName is a fallback identifier only, not a permanent unique identity.)
  */
 export const selectDoctorReviews = createSelector(
-  [selectAllReviews, (_: RootState, doctorIdOrName: string) => doctorIdOrName],
+  [selectPublicReviews, (_: RootState, doctorIdOrName: string) => doctorIdOrName],
   (reviews, doctorIdOrName) =>
     reviews.filter(
       (r) => r.doctorId === doctorIdOrName || r.doctorName === doctorIdOrName
@@ -71,7 +111,7 @@ export const selectDoctorReviews = createSelector(
  * Used to prevent duplicate review submissions.
  */
 export const selectHasReviewedAppointment = createSelector(
-  [selectAllReviews, (_: RootState, appointmentId: string) => appointmentId],
+  [selectPublicReviews, (_: RootState, appointmentId: string) => appointmentId],
   (reviews, appointmentId) => reviews.some((r) => r.appointmentId === appointmentId)
 );
 
@@ -80,7 +120,7 @@ export const selectHasReviewedAppointment = createSelector(
  * Returns 0 when the doctor has no reviews.
  */
 export const selectAverageRating = createSelector(
-  [selectAllReviews, (_: RootState, doctorIdOrName: string) => doctorIdOrName],
+  [selectPublicReviews, (_: RootState, doctorIdOrName: string) => doctorIdOrName],
   (reviews, doctorIdOrName) => {
     const doctorReviews = reviews.filter(
       (r) => r.doctorId === doctorIdOrName || r.doctorName === doctorIdOrName
@@ -95,7 +135,7 @@ export const selectAverageRating = createSelector(
  * Returns count and percentage for each star level (5 down to 1).
  */
 export const selectRatingDistribution = createSelector(
-  [selectAllReviews, (_: RootState, doctorIdOrName: string) => doctorIdOrName],
+  [selectPublicReviews, (_: RootState, doctorIdOrName: string) => doctorIdOrName],
   (reviews, doctorIdOrName) => {
     const doctorReviews = reviews.filter(
       (r) => r.doctorId === doctorIdOrName || r.doctorName === doctorIdOrName
@@ -117,7 +157,7 @@ export const selectRatingDistribution = createSelector(
  * Only months containing reviews are returned (no synthetic zero dips).
  */
 export const selectRatingTrend = createSelector(
-  [selectAllReviews, (_: RootState, doctorIdOrName: string) => doctorIdOrName],
+  [selectPublicReviews, (_: RootState, doctorIdOrName: string) => doctorIdOrName],
   (reviews, doctorIdOrName) => {
     const doctorReviews = reviews.filter(
       (r) => r.doctorId === doctorIdOrName || r.doctorName === doctorIdOrName
@@ -144,7 +184,7 @@ export const selectRatingTrend = createSelector(
  */
 export const selectRecentReviews = createSelector(
   [
-    selectAllReviews,
+    selectPublicReviews,
     (_: RootState, doctorIdOrName: string) => doctorIdOrName,
     (_: RootState, __: string, limit = 10) => limit,
   ],

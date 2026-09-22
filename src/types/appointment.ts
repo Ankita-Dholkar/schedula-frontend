@@ -1,3 +1,5 @@
+import type { PaymentStatus, PaymentMethod } from "@/types/payment";
+
 export type AppointmentStatus = "confirmed" | "pending" | "cancelled" | "completed" | "missed" | "starting-soon" | "live";
 
 export type Appointment = {
@@ -24,13 +26,13 @@ export type Appointment = {
   prescriptionUrl?: string;
   // ── Payment convenience fields (source of truth: paymentsSlice) 
   /** Mirrors the associated Payment.status for UI rendering. */
-  paymentStatus?: "pending" | "paid" | "failed";
+  paymentStatus?: PaymentStatus;
   /** Mirrors CONSULTATION_FEE at time of booking. */
   consultationFee?: number;
   /** Mirrors Payment.transactionId once paid. */
   transactionId?: string;
   /** Mirrors Payment.method once a method is selected. */
-  paymentMethod?: "card" | "upi";
+  paymentMethod?: PaymentMethod;
   // ── Cancellation audit (admin view) 
   /** The reason provided when the appointment was cancelled. */
   cancellationReason?: string;

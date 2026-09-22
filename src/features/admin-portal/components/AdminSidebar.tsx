@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearAdminUser } from "@/store/slices/adminAuthSlice";
+import { selectAllReviewsForAdmin } from "@/store/slices/reviewsSlice";
 import { useMemo } from "react";
 
 const STORAGE_KEY = "loggedInAdmin";
@@ -50,14 +51,14 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     title: "Operations",
     items: [
       { label: "Appointments", href: "/admin/appointments", icon: CalendarDays, implemented: true  },
-      { label: "Payments", href: "/admin/payments", icon: CreditCard, implemented: false },
-      { label: "Reviews", href: "/admin/reviews", icon: Star, implemented: false },
+      { label: "Payments", href: "/admin/payments", icon: CreditCard, implemented: true },
+      { label: "Reviews", href: "/admin/reviews", icon: Star, implemented: true },
     ],
   },
   {
     title: "System",
     items: [
-      { label: "Notifications", href: "/admin/notifications", icon: Bell, implemented: false },
+      { label: "Notifications", href: "/admin/notifications", icon: Bell, implemented: true },
       { label: "Reports", href: "/admin/reports", icon: BarChart2, implemented: false },
       { label: "Admin Users", href: "/admin/admin-users", icon: ShieldCheck, implemented: false },
       { label: "Audit Logs", href: "/admin/audit-logs", icon: ClipboardList, implemented: false },
@@ -79,6 +80,13 @@ export default function AdminSidebar({ open, onClose }: Props) {
   // Pending verification count for the sidebar badge
   const doctors = useAppSelector((s) => s.doctors.doctors);
   const pendingCount = useMemo(() => doctors.filter((d) => d.verificationStatus === "pending").length, [doctors]);
+
+  // Reported reviews count for the sidebar badge
+  const allReviews = useAppSelector(selectAllReviewsForAdmin);
+  const reportedReviewsCount = useMemo(
+    () => allReviews.filter((r) => r.isReported && !r.isHidden).length,
+    [allReviews]
+  );
 
   const handleLogout = () => {
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
@@ -175,6 +183,12 @@ export default function AdminSidebar({ open, onClose }: Props) {
                         {href === "/admin/doctor-verification" && pendingCount > 0 && (
                           <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 text-[10px] font-bold text-white leading-none">
                             {pendingCount}
+                          </span>
+                        )}
+                        {/* Reported reviews badge — only on Reviews */}
+                        {href === "/admin/reviews" && reportedReviewsCount > 0 && (
+                          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white leading-none">
+                            {reportedReviewsCount}
                           </span>
                         )}
                       </Link>
