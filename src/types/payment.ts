@@ -5,7 +5,7 @@
 
 export type PaymentMethod = "card" | "upi";
 
-export type PaymentStatus = "pending" | "paid" | "failed";
+export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 
 /** Single source-of-truth for the consultation fee across all portals. */
 export const CONSULTATION_FEE = 500;
@@ -23,4 +23,9 @@ export interface Payment {
   transactionId?: string;
   createdAt: string;
   updatedAt?: string;
+  /** Populated when a demo refund has been recorded. */
+  refundId?: string;
+  refundAmount?: number;
+  refundReason?: string;
+  refundedAt?: string;
 }

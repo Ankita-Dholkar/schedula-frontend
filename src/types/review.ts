@@ -12,4 +12,20 @@ export interface Review {
   comment?: string;
   /** ISO 8601 timestamp */
   createdAt: string;
+  // Reporting (patient-initiated) 
+  /** True if a user has flagged this review for admin moderation. */
+  isReported?: boolean;
+  /** The reason provided by the reporter. */
+  reportReason?: string;
+  /** ISO 8601 timestamp of when the report was filed. */
+  reportedAt?: string;
+  /** Name or ID of the user who reported the review. */
+  reportedBy?: string;
+  // Moderation (admin-initiated) 
+  /** True if an admin has hidden this review from public-facing views. */
+  isHidden?: boolean;
+  /** ISO 8601 timestamp of when the moderation action was taken. */
+  moderatedAt?: string;
+  /** Admin identifier who performed the moderation. */
+  moderatedBy?: string;
 }
