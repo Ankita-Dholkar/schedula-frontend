@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAppDispatch } from "@/store/hooks";
 import { sendNotification } from "@/store/slices/adminNotificationsSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
 import type {
   AdminNotification,
   NotificationTarget,
@@ -159,6 +160,22 @@ export default function SendNotificationModal({ open, onClose, onSent }: Props) 
     };
 
     dispatch(sendNotification(notification));
+    dispatch(logAdminAction({
+      actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+      action: "NOTIFICATION_BROADCAST",
+      entityType: "notification",
+      entityId: notification.id,
+      entityName: notification.title,
+      details: `Broadcast notification "${notification.title}" sent to ${notification.target.replace(/_/g, " ")} (${notification.recipientCount ?? 0} recipients).`,
+      metadata: {
+        target: notification.target,
+        recipientCount: notification.recipientCount,
+        category: notification.category,
+        selectedUsers: notification.selectedUsers,
+      },
+      ipAddress: "127.0.0.1",
+      severity: "info",
+    }));
     setSending(false);
     setSent(true);
     onSent?.();

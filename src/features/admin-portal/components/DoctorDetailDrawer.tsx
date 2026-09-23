@@ -9,6 +9,7 @@ import DocumentViewerModal from "./DocumentViewerModal";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { useAppDispatch } from "@/store/hooks";
 import { setDoctorVerificationStatus, setDoctorAccountStatus, refreshDoctors } from "@/store/slices/doctorsSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
 
 type Props = {
   doctor: Doctor | null;
@@ -64,12 +65,56 @@ export default function DoctorDetailDrawer({ doctor, open, onClose }: Props) {
 
     if (dialog === "approve") {
       dispatch(setDoctorVerificationStatus({ id: doctor.id, status: "approved" }));
+      dispatch(logAdminAction({
+        actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+        action: "DOCTOR_VERIFIED",
+        entityType: "doctor",
+        entityId: doctor.id,
+        entityName: doctor.name,
+        details: `Doctor verification approved for ${doctor.name} (${doctor.specialization}).`,
+        metadata: { previousStatus: "pending", newStatus: "approved", licenseNumber: doctor.licenseNumber },
+        ipAddress: "127.0.0.1",
+        severity: "info",
+      }));
     } else if (dialog === "reject") {
       dispatch(setDoctorVerificationStatus({ id: doctor.id, status: "rejected", rejectionReason: reason }));
+      dispatch(logAdminAction({
+        actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+        action: "DOCTOR_REJECTED",
+        entityType: "doctor",
+        entityId: doctor.id,
+        entityName: doctor.name,
+        details: `Doctor verification rejected for ${doctor.name}. Reason: ${reason ?? "No reason provided"}.`,
+        metadata: { previousStatus: "pending", newStatus: "rejected", rejectionReason: reason },
+        ipAddress: "127.0.0.1",
+        severity: "warning",
+      }));
     } else if (dialog === "activate") {
       dispatch(setDoctorAccountStatus({ id: doctor.id, status: "active" }));
+      dispatch(logAdminAction({
+        actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+        action: "DOCTOR_STATUS_TOGGLED",
+        entityType: "doctor",
+        entityId: doctor.id,
+        entityName: doctor.name,
+        details: `Doctor account for ${doctor.name} activated by admin.`,
+        metadata: { previousStatus: "inactive", newStatus: "active" },
+        ipAddress: "127.0.0.1",
+        severity: "info",
+      }));
     } else if (dialog === "deactivate") {
       dispatch(setDoctorAccountStatus({ id: doctor.id, status: "inactive" }));
+      dispatch(logAdminAction({
+        actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+        action: "DOCTOR_STATUS_TOGGLED",
+        entityType: "doctor",
+        entityId: doctor.id,
+        entityName: doctor.name,
+        details: `Doctor account for ${doctor.name} deactivated by admin.`,
+        metadata: { previousStatus: "active", newStatus: "inactive" },
+        ipAddress: "127.0.0.1",
+        severity: "warning",
+      }));
     }
 
     dispatch(refreshDoctors());
