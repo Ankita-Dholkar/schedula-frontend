@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
+  TrendingUp,
   Users,
   UserCheck,
   CalendarDays,
@@ -37,6 +38,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     title: "Overview",
     items: [
       { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, implemented: true },
+      { label: "Analytics",  href: "/admin/analytics",  icon: TrendingUp,     implemented: true  },
     ],
   },
   {
@@ -59,9 +61,9 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     title: "System",
     items: [
       { label: "Notifications", href: "/admin/notifications", icon: Bell, implemented: true },
-      { label: "Reports", href: "/admin/reports", icon: BarChart2, implemented: false },
+      { label: "Reports", href: "/admin/reports", icon: BarChart2, implemented: true },
       { label: "Admin Users", href: "/admin/admin-users", icon: ShieldCheck, implemented: false },
-      { label: "Audit Logs", href: "/admin/audit-logs", icon: ClipboardList, implemented: false },
+      { label: "Audit Logs", href: "/admin/audit-logs", icon: ClipboardList, implemented: true },
       { label: "Settings", href: "/admin/settings", icon: Settings, implemented: false },
     ],
   },

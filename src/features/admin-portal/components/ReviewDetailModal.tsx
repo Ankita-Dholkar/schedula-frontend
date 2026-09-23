@@ -17,6 +17,7 @@ import {
 import type { Review } from "@/types/review";
 import { useAppDispatch } from "@/store/hooks";
 import { toggleHideReview } from "@/store/slices/reviewsSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -174,7 +175,21 @@ export default function ReviewDetailModal({ review, open, onClose }: Props) {
   const handleConfirmToggle = async () => {
     setConfirmLoading(true);
     await new Promise((r) => setTimeout(r, 500));
+    const willBeHidden = !review.isHidden;
     dispatch(toggleHideReview({ reviewId: review.id }));
+    dispatch(logAdminAction({
+      actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+      action: willBeHidden ? "REVIEW_HIDDEN" : "REVIEW_RESTORED",
+      entityType: "review",
+      entityId: review.id,
+      entityName: `Review by ${review.patientName} on ${review.doctorName ?? "Doctor"}`,
+      details: willBeHidden
+        ? `Review by ${review.patientName} hidden by admin after moderation.`
+        : `Hidden review by ${review.patientName} restored by admin.`,
+      metadata: { reviewRating: review.rating, isReported: review.isReported ?? false, reportReason: review.reportReason ?? "—" },
+      ipAddress: "127.0.0.1",
+      severity: willBeHidden ? "warning" : "info",
+    }));
     setConfirmLoading(false);
     setShowConfirm(false);
     setJustActioned(true);

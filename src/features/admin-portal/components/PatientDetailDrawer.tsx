@@ -12,6 +12,7 @@ import type { BadgeVariant } from "@/components/ui/Badge";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setPatientAccountStatus, refreshPatients } from "@/store/slices/patientsSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
 import { getUserHealthProfile } from "@/lib/mock-data/userProfiles";
 import { getComputedAppointmentStatus } from "@/lib/mock-data/appointments";
 import type { PatientUser } from "@/types/user";
@@ -121,9 +122,21 @@ export default function PatientDetailDrawer({ patient, open, onClose }: Props) {
     if (!patient || !dialog) return;
     setActionLoading(true);
     await new Promise((r) => setTimeout(r, 500));
+    const newStatus = dialog === "activate_patient" ? "active" : "inactive";
     dispatch(setPatientAccountStatus({
       id: patient.id,
-      accountStatus: dialog === "activate_patient" ? "active" : "inactive",
+      accountStatus: newStatus,
+    }));
+    dispatch(logAdminAction({
+      actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+      action: "PATIENT_STATUS_TOGGLED",
+      entityType: "patient",
+      entityId: patient.id,
+      entityName: patient.name,
+      details: `Patient account for ${patient.name} ${newStatus === "active" ? "activated" : "deactivated"} by admin.`,
+      metadata: { previousStatus: newStatus === "active" ? "inactive" : "active", newStatus },
+      ipAddress: "127.0.0.1",
+      severity: newStatus === "inactive" ? "warning" : "info",
     }));
     dispatch(refreshPatients());
     setActionLoading(false);
