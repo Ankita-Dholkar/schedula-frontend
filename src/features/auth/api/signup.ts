@@ -55,7 +55,7 @@ export const signup = async (userData: Omit<User, "id"> & Record<string, unknown
   const newId = `${userData.role === "doctor" ? "doc" : "pat"}-${Date.now()}`;
   const newUser: User = { ...userData, id: newId } as User;
 
-  
+
   saveRegisteredUser(newUser);
 
   if (userData.role === "doctor") {

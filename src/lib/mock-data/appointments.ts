@@ -548,3 +548,68 @@ export function markDoctorNotificationRead(id: string) {
     localStorage.setItem("doctorNotifications", JSON.stringify(list.map((n) => n.id === id ? { ...n, read: true } : n)));
   } catch { /* ignore */ }
 }
+
+/**
+ * Delivers an admin broadcast notification into the patient notification queue.
+ * Writes into the same "userNotifications" localStorage key that the user bell reads from.
+ * De-duplicates by adminNotifId so replaying the function is safe.
+ */
+export function deliverAdminNotificationToPatients(payload: {
+  adminNotifId: string;
+  title: string;
+  message: string;
+  sentAt: string;
+}): void {
+  try {
+    const raw = localStorage.getItem("userNotifications");
+    const list: (AppointmentNotification & { adminNotifId?: string })[] = raw
+      ? JSON.parse(raw)
+      : [];
+    // De-duplicate: skip if this admin notification was already delivered
+    if (list.some((n) => n.adminNotifId === payload.adminNotifId)) return;
+    const entry: AppointmentNotification & { adminNotifId: string } = {
+      id: `admin-${payload.adminNotifId}-p`,
+      adminNotifId: payload.adminNotifId,
+      // appointmentId is required by the type — use a sentinel value for admin broadcasts
+      appointmentId: "admin-broadcast",
+      patientName: "Admin",
+      message: `📢 ${payload.title}: ${payload.message}`,
+      createdAt: payload.sentAt,
+      read: false,
+    };
+    list.unshift(entry);
+    localStorage.setItem("userNotifications", JSON.stringify(list));
+  } catch { /* ignore */ }
+}
+
+/**
+ * Delivers an admin broadcast notification into the doctor notification queue.
+ * Writes into the same "doctorNotifications" localStorage key that the doctor bell reads from.
+ * De-duplicates by adminNotifId so replaying the function is safe.
+ */
+export function deliverAdminNotificationToDoctors(payload: {
+  adminNotifId: string;
+  title: string;
+  message: string;
+  sentAt: string;
+}): void {
+  try {
+    const raw = localStorage.getItem("doctorNotifications");
+    const list: (AppointmentNotification & { adminNotifId?: string })[] = raw
+      ? JSON.parse(raw)
+      : [];
+    // De-duplicate
+    if (list.some((n) => n.adminNotifId === payload.adminNotifId)) return;
+    const entry: AppointmentNotification & { adminNotifId: string } = {
+      id: `admin-${payload.adminNotifId}-d`,
+      adminNotifId: payload.adminNotifId,
+      appointmentId: "admin-broadcast",
+      patientName: "Admin",
+      message: `📢 ${payload.title}: ${payload.message}`,
+      createdAt: payload.sentAt,
+      read: false,
+    };
+    list.unshift(entry);
+    localStorage.setItem("doctorNotifications", JSON.stringify(list));
+  } catch { /* ignore */ }
+}

@@ -110,6 +110,15 @@ export const appointmentsSlice = createSlice({
       persistMarkDoctorRead(action.payload);
       state.doctorNotifications = loadDoctorNotifications();
     },
+    /**
+     * Lightweight re-hydration of ONLY the notification lists from localStorage.
+     * Use this in portal headers to pick up admin broadcasts without a full
+     * appointments refresh.
+     */
+    refreshNotifications: (state) => {
+      state.userNotifications = loadNotifications();
+      state.doctorNotifications = loadDoctorNotifications();
+    },
   },
 
   // ── Payment field sync (paymentsSlice is the source of truth) ─────────────
@@ -138,6 +147,7 @@ export const {
   addDoctorNotification,
   readUserNotification,
   readDoctorNotification,
+  refreshNotifications,
 } = appointmentsSlice.actions;
 
 export default appointmentsSlice.reducer;
