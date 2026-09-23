@@ -1,5 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { AdminNotification } from "@/types/notification";
+import {
+  deliverAdminNotificationToPatients,
+  deliverAdminNotificationToDoctors,
+} from "@/lib/mock-data/appointments";
 
 // ─── Persistence helpers ───────────────────────────────────────────────────────
 
@@ -121,11 +125,23 @@ const adminNotificationsSlice = createSlice({
     },
 
     /**
-     * Adds a new notification record and persists to localStorage.
+     * Adds a new notification record, persists to localStorage,
+     * AND delivers it into the relevant user/doctor notification queues
+     * so it appears in the patient/doctor portal bell dropdowns.
      */
     sendNotification: (state, action: PayloadAction<AdminNotification>) => {
       state.notifications.unshift(action.payload);
       saveToStorage(state.notifications);
+
+      const { id, title, message, target, sentAt } = action.payload;
+      const deliveryPayload = { adminNotifId: id, title, message, sentAt };
+
+      if (target === "all_patients" || target === "selected_users") {
+        deliverAdminNotificationToPatients(deliveryPayload);
+      }
+      if (target === "all_doctors" || target === "selected_users") {
+        deliverAdminNotificationToDoctors(deliveryPayload);
+      }
     },
 
     /**

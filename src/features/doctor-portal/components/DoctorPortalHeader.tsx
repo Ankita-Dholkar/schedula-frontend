@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Bell, LogOut, Check, Menu } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
-import { readDoctorNotification } from "@/store/slices/appointmentsSlice";
+import { readDoctorNotification, refreshNotifications } from "@/store/slices/appointmentsSlice";
 import { useSidebarToggle } from "@/store/SidebarToggleContext";
 
 const timeAgo = (dateString: string) => {
@@ -57,6 +57,13 @@ export default function DoctorPortalHeader({ title, onMenuClick }: { title: stri
     window.location.href = "/";
   };
 
+  // Refresh notifications on mount and every 30 s to pick up admin broadcasts
+  useEffect(() => {
+    dispatch(refreshNotifications());
+    const interval = setInterval(() => dispatch(refreshNotifications()), 30_000);
+    return () => clearInterval(interval);
+  }, [dispatch]);
+
   return (
     <header className="flex h-16 items-center justify-between border-b border-[var(--line)] bg-white px-4 lg:px-6">
       <div className="flex items-center gap-3">
@@ -102,7 +109,10 @@ export default function DoctorPortalHeader({ title, onMenuClick }: { title: stri
                       <li key={n.id} className={`flex gap-3 px-4 py-3 ${n.read ? "bg-white" : "bg-blue-50/40"}`}>
                         <div className="flex-1">
                           <p className={`text-sm ${n.read ? "text-[var(--muted)]" : "font-medium text-[var(--ink)]"}`}>
-                            <span className="font-semibold">{n.patientName}</span>: {n.message}
+                            {/* Admin broadcasts embed the title in the message — show directly */}
+                            {n.patientName === "Admin"
+                              ? n.message
+                              : <><span className="font-semibold">{n.patientName}</span>: {n.message}</>}
                           </p>
                           <p className="mt-1 text-[11px] text-[var(--muted)]">{timeAgo(n.createdAt)}</p>
                         </div>

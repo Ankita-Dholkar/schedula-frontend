@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { LogOut, Bell, Check, Menu } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
-import { readUserNotification } from "@/store/slices/appointmentsSlice";
+import { readUserNotification, refreshNotifications } from "@/store/slices/appointmentsSlice";
 import { useSidebarToggle } from "@/store/SidebarToggleContext";
 
 type Props = {
@@ -49,6 +49,13 @@ export default function UserPortalHeader({ title, onMenuClick }: Props) {
     dispatch(logout());
     window.location.href = "/";
   };
+
+  // Refresh notifications on mount and every 30 s to pick up admin broadcasts
+  useEffect(() => {
+    dispatch(refreshNotifications());
+    const interval = setInterval(() => dispatch(refreshNotifications()), 30_000);
+    return () => clearInterval(interval);
+  }, [dispatch]);
 
   const handleMarkRead = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

@@ -19,4 +19,4 @@ export const mockUsers: User[] = [
   ...mockPatients,
   ...mockDoctors,
   ...mockAdminUsers,
-];
+];
