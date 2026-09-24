@@ -56,9 +56,13 @@ export default function BarComparisonChart({
   );
   const maxVal = Math.max(...allValues, 1);
 
+  const isDense = data.length > 20;
+  const GROUP_GAP = isDense ? 0.2 : 0.3; // fraction of group width used as gap
+
   const groupW = PLOT_W / data.length;
   const barW = (groupW * (1 - GROUP_GAP)) / series.length;
   const groupPad = (groupW * GROUP_GAP) / 2;
+  const labelStep = data.length > 20 ? 5 : data.length > 10 ? 2 : 1;
 
   // Y ticks
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((pct) => ({
@@ -101,8 +105,39 @@ export default function BarComparisonChart({
         {data.map((group, gi) => {
           const gx = PAD.left + gi * groupW;
           const cx = gx + groupW / 2;
+          const isLabelVisible =
+            gi === data.length - 1 ||
+            (gi % labelStep === 0 && data.length - 1 - gi >= Math.floor(labelStep / 2));
+
+          const handleHover = (e: React.MouseEvent<SVGElement>) => {
+            const rect = (
+              e.currentTarget.closest("svg") as SVGSVGElement
+            ).getBoundingClientRect();
+            const svgX =
+              ((cx - PAD.left) / PLOT_W) * rect.width + rect.left;
+            setTooltip({
+              x: svgX,
+              y: rect.top + 16,
+              group: group.label,
+              values: series.map((s2) => ({
+                label: s2.label,
+                color: s2.color,
+                value: Number(group[s2.key] ?? 0),
+              })),
+            });
+          };
+
           return (
-            <g key={group.label}>
+            <g key={`${group.label}-${gi}`}>
+              {/* Hit area so hovering over a date with 0 count still shows tooltip */}
+              <rect
+                x={gx}
+                y={PAD.top}
+                width={groupW}
+                height={PLOT_H}
+                fill="transparent"
+                onMouseEnter={handleHover}
+              />
               {series.map((s, si) => {
                 const val = Number(group[s.key] ?? 0);
                 const barH = (val / maxVal) * PLOT_H;
@@ -113,43 +148,27 @@ export default function BarComparisonChart({
                     key={s.key}
                     x={bx}
                     y={by}
-                    width={barW - 2}
+                    width={Math.max(barW - (isDense ? 1 : 2), 2)}
                     height={Math.max(barH, 0)}
-                    rx={3}
+                    rx={Math.min(3, Math.max(1, (barW - 1) / 2))}
                     fill={s.color}
                     opacity={0.85}
-                    onMouseEnter={(e) => {
-                      const rect = (
-                        e.currentTarget.closest("svg") as SVGSVGElement
-                      ).getBoundingClientRect();
-                      const svgX =
-                        ((cx - PAD.left) / PLOT_W) * rect.width + rect.left;
-                      setTooltip({
-                        x: svgX,
-                        y: rect.top + 16,
-                        group: group.label,
-                        values: series.map((s2) => ({
-                          label: s2.label,
-                          color: s2.color,
-                          value: Number(group[s2.key] ?? 0),
-                        })),
-                      });
-                    }}
+                    onMouseEnter={handleHover}
                   />
                 );
               })}
               {/* X-axis label */}
-              <text
-                x={cx}
-                y={PAD.top + PLOT_H + 16}
-                textAnchor="middle"
-                fontSize={9.5}
-                fill="var(--muted)"
-              >
-                {group.label.length > 6
-                  ? group.label.slice(0, 6)
-                  : group.label}
-              </text>
+              {isLabelVisible && (
+                <text
+                  x={cx}
+                  y={PAD.top + PLOT_H + 16}
+                  textAnchor="middle"
+                  fontSize={isDense ? 8.5 : 9.5}
+                  fill="var(--muted)"
+                >
+                  {group.label}
+                </text>
+              )}
             </g>
           );
         })}
