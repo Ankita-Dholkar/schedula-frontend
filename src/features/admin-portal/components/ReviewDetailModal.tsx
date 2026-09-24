@@ -15,9 +15,10 @@ import {
   Loader2,
 } from "lucide-react";
 import type { Review } from "@/types/review";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleHideReview } from "@/store/slices/reviewsSlice";
 import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { hasPermission } from "@/lib/admin/permissions";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -138,6 +139,8 @@ type Props = {
 
 export default function ReviewDetailModal({ review, open, onClose }: Props) {
   const dispatch = useAppDispatch();
+  const currentAdmin = useAppSelector((s) => s.adminAuth.admin);
+  const canEditReviews = hasPermission(currentAdmin, "reviews", "edit");
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const [showConfirm, setShowConfirm] = useState(false);
@@ -377,24 +380,26 @@ export default function ReviewDetailModal({ review, open, onClose }: Props) {
             >
               Close
             </button>
-            <button
-              onClick={() => setShowConfirm(true)}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${
-                review.isHidden
-                  ? "bg-emerald-600 hover:bg-emerald-700"
-                  : "bg-amber-500 hover:bg-amber-600"
-              }`}
-            >
-              {review.isHidden ? (
-                <>
-                  <Eye size={14} /> Unhide Review
-                </>
-              ) : (
-                <>
-                  <EyeOff size={14} /> Hide from Public
-                </>
-              )}
-            </button>
+            {canEditReviews && (
+              <button
+                onClick={() => setShowConfirm(true)}
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${
+                  review.isHidden
+                    ? "bg-emerald-600 hover:bg-emerald-700"
+                    : "bg-amber-500 hover:bg-amber-600"
+                }`}
+              >
+                {review.isHidden ? (
+                  <>
+                    <Eye size={14} /> Unhide Review
+                  </>
+                ) : (
+                  <>
+                    <EyeOff size={14} /> Hide from Public
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

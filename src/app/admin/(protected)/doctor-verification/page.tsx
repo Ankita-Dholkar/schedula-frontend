@@ -11,6 +11,7 @@ import Pagination from "@/components/ui/Pagination";
 import DocumentViewerModal from "@/features/admin-portal/components/DocumentViewerModal";
 import ConfirmationDialog from "@/features/admin-portal/components/ConfirmationDialog";
 import DoctorDetailDrawer from "@/features/admin-portal/components/DoctorDetailDrawer";
+import { hasPermission } from "@/lib/admin/permissions";
 import type { Doctor, DoctorDocument } from "@/types/doctor";
 
 const PAGE_SIZE = 4;
@@ -33,6 +34,8 @@ function verificationLabel(status?: Doctor["verificationStatus"]) {
 export default function DoctorVerificationPage() {
   const dispatch = useAppDispatch();
   const doctors  = useAppSelector((s) => s.doctors.doctors);
+  const currentAdmin = useAppSelector((s) => s.adminAuth.admin);
+  const canApproveReject = hasPermission(currentAdmin, "doctor_verification", "approve_reject");
 
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabFilter>("pending");
@@ -293,7 +296,7 @@ export default function DoctorVerificationPage() {
                     View Full Profile →
                   </button>
 
-                  {isPending && (
+                  {isPending && canApproveReject && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => setConfirmDialog({ doctor: doc, mode: "reject" })}

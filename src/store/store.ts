@@ -11,6 +11,7 @@ import toastReducer from "./slices/toastSlice";
 import patientsReducer from "./slices/patientsSlice";
 import adminNotificationsReducer from "./slices/adminNotificationsSlice";
 import auditLogsReducer from "./slices/auditLogsSlice";
+import adminManagementReducer from "./slices/adminManagementSlice";
 import { persistPayments } from "@/lib/mock-data/payments";
 import { persistAuditLogs } from "@/lib/mock-data/auditLogs";
 
@@ -28,6 +29,7 @@ export const store = configureStore({
     patients: patientsReducer,
     adminNotifications: adminNotificationsReducer,
     auditLogs: auditLogsReducer,
+    adminManagement: adminManagementReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -10,6 +10,7 @@ import Pagination from "@/components/ui/Pagination";
 import { LoadingState, EmptyState } from "@/components/ui/StateViews";
 import DoctorDetailDrawer from "@/features/admin-portal/components/DoctorDetailDrawer";
 import ConfirmationDialog from "@/features/admin-portal/components/ConfirmationDialog";
+import { hasPermission } from "@/lib/admin/permissions";
 import type { Doctor } from "@/types/doctor";
 
 const PAGE_SIZE = 5;
@@ -50,6 +51,8 @@ function getStoredPage(key: string): number {
 export default function AdminDoctorsPage() {
   const dispatch = useAppDispatch();
   const doctors = useAppSelector((s) => s.doctors.doctors);
+  const currentAdmin = useAppSelector((s) => s.adminAuth.admin);
+  const canEditDoctors = hasPermission(currentAdmin, "doctors", "edit");
 
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -348,26 +351,28 @@ export default function AdminDoctorsPage() {
                           >
                             View Profile
                           </button>
-                          <button
-                            disabled={cannotActivate}
-                            onClick={() => setConfirmDialog({ doctor: doc, mode: isActive ? "deactivate" : "activate" })}
-                            className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
-                              isActive
-                                ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
-                                : cannotActivate
-                                ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
-                                : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                            }`}
-                            title={
-                              !isActive && isPending
-                                ? "Cannot activate account while verification is pending approval"
-                                : !isActive && isRejected
-                                ? "Cannot activate a doctor whose application is rejected"
-                                : undefined
-                            }
-                          >
-                            {isActive ? "Deactivate" : "Activate"}
-                          </button>
+                          {canEditDoctors && (
+                            <button
+                              disabled={cannotActivate}
+                              onClick={() => setConfirmDialog({ doctor: doc, mode: isActive ? "deactivate" : "activate" })}
+                              className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
+                                isActive
+                                  ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                  : cannotActivate
+                                  ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
+                                  : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              }`}
+                              title={
+                                !isActive && isPending
+                                  ? "Cannot activate account while verification is pending approval"
+                                  : !isActive && isRejected
+                                  ? "Cannot activate a doctor whose application is rejected"
+                                  : undefined
+                              }
+                            >
+                              {isActive ? "Deactivate" : "Activate"}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

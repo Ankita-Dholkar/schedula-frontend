@@ -22,6 +22,9 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearAdminUser } from "@/store/slices/adminAuthSlice";
 import { selectAllReviewsForAdmin } from "@/store/slices/reviewsSlice";
+import { canViewModule } from "@/lib/admin/permissions";
+import type { AdminModule } from "@/types/admin";
+import { ROLE_META } from "@/types/admin";
 import { useMemo } from "react";
 
 const STORAGE_KEY = "loggedInAdmin";
@@ -30,41 +33,41 @@ type NavItem = {
   label: string;
   href: string;
   icon: React.ElementType;
-  implemented: boolean;
+  module: AdminModule;
 };
 
 const navGroups: { title: string; items: NavItem[] }[] = [
   {
     title: "Overview",
     items: [
-      { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, implemented: true },
-      { label: "Analytics",  href: "/admin/analytics",  icon: TrendingUp,     implemented: true  },
+      { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, module: "dashboard" },
+      { label: "Analytics",  href: "/admin/analytics",  icon: TrendingUp,     module: "analytics"  },
     ],
   },
   {
     title: "Users",
     items: [
-      { label: "Doctors",             href: "/admin/doctors",              icon: Stethoscope, implemented: true  },
-      { label: "Doctor Verification", href: "/admin/doctor-verification",  icon: UserCheck,   implemented: true  },
-      { label: "Patients",            href: "/admin/patients",             icon: Users,       implemented: true  },
+      { label: "Doctors",             href: "/admin/doctors",             icon: Stethoscope, module: "doctors"             },
+      { label: "Doctor Verification", href: "/admin/doctor-verification", icon: UserCheck,   module: "doctor_verification" },
+      { label: "Patients",            href: "/admin/patients",            icon: Users,       module: "patients"            },
     ],
   },
   {
     title: "Operations",
     items: [
-      { label: "Appointments", href: "/admin/appointments", icon: CalendarDays, implemented: true  },
-      { label: "Payments", href: "/admin/payments", icon: CreditCard, implemented: true },
-      { label: "Reviews", href: "/admin/reviews", icon: Star, implemented: true },
+      { label: "Appointments", href: "/admin/appointments", icon: CalendarDays, module: "appointments" },
+      { label: "Payments",     href: "/admin/payments",     icon: CreditCard,   module: "payments"     },
+      { label: "Reviews",      href: "/admin/reviews",      icon: Star,         module: "reviews"      },
     ],
   },
   {
     title: "System",
     items: [
-      { label: "Notifications", href: "/admin/notifications", icon: Bell, implemented: true },
-      { label: "Reports", href: "/admin/reports", icon: BarChart2, implemented: true },
-      { label: "Admin Users", href: "/admin/admin-users", icon: ShieldCheck, implemented: false },
-      { label: "Audit Logs", href: "/admin/audit-logs", icon: ClipboardList, implemented: true },
-      { label: "Settings", href: "/admin/settings", icon: Settings, implemented: false },
+      { label: "Notifications", href: "/admin/notifications", icon: Bell,          module: "notifications" },
+      { label: "Reports",       href: "/admin/reports",       icon: BarChart2,     module: "reports"       },
+      { label: "Admin Users",   href: "/admin/admin-users",   icon: ShieldCheck,   module: "admin_users"   },
+      { label: "Audit Logs",    href: "/admin/audit-logs",    icon: ClipboardList, module: "audit_logs"    },
+      { label: "Settings",      href: "/admin/settings",      icon: Settings,      module: "settings"      },
     ],
   },
 ];
@@ -78,6 +81,8 @@ export default function AdminSidebar({ open, onClose }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
+
+  const currentAdmin = useAppSelector((s) => s.adminAuth.admin);
 
   // Pending verification count for the sidebar badge
   const doctors = useAppSelector((s) => s.doctors.doctors);
@@ -96,6 +101,10 @@ export default function AdminSidebar({ open, onClose }: Props) {
     onClose();
     router.replace("/admin/login");
   };
+
+  const roleMeta = currentAdmin?.adminRole
+    ? ROLE_META[currentAdmin.adminRole]
+    : null;
 
   return (
     <>
@@ -141,70 +150,66 @@ export default function AdminSidebar({ open, onClose }: Props) {
 
         {/* Nav groups */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-          {navGroups.map((group) => (
-            <div key={group.title}>
-              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-                {group.title}
-              </p>
-              <ul className="space-y-0.5">
-                {group.items.map(({ label, href, icon: Icon, implemented }) => {
-                  const isActive = pathname === href;
-                  if (!implemented) {
+          {navGroups.map((group) => {
+            // Filter out items the current admin cannot view
+            const visibleItems = group.items.filter((item) =>
+              canViewModule(currentAdmin, item.module)
+            );
+            if (visibleItems.length === 0) return null;
+
+            return (
+              <div key={group.title}>
+                <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                  {group.title}
+                </p>
+                <ul className="space-y-0.5">
+                  {visibleItems.map(({ label, href, icon: Icon, module }) => {
+                    const isActive = pathname === href;
                     return (
                       <li key={href}>
-                        <div
-                          className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 cursor-not-allowed select-none"
-                          title="Coming Soon"
+                        <Link
+                          href={href}
+                          onClick={onClose}
+                          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                            isActive
+                              ? "bg-[var(--brand)] text-white shadow-sm"
+                              : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                          }`}
+                          aria-current={isActive ? "page" : undefined}
                         >
-                          <span className="flex items-center gap-3">
-                            <Icon size={17} strokeWidth={1.8} />
-                            {label}
-                          </span>
-                          <span className="rounded-full bg-slate-800 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
-                            Soon
-                          </span>
-                        </div>
+                          <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
+                          <span className="flex-1">{label}</span>
+
+                          {/* Pending doctor verification badge */}
+                          {href === "/admin/doctor-verification" && pendingCount > 0 && (
+                            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 text-[10px] font-bold text-white leading-none">
+                              {pendingCount}
+                            </span>
+                          )}
+                          {/* Reported reviews badge */}
+                          {href === "/admin/reviews" && reportedReviewsCount > 0 && (
+                            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white leading-none">
+                              {reportedReviewsCount}
+                            </span>
+                          )}
+                        </Link>
                       </li>
                     );
-                  }
-                  return (
-                    <li key={href}>
-                      <Link
-                        href={href}
-                        onClick={onClose}
-                        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                          isActive
-                            ? "bg-[var(--brand)] text-white shadow-sm"
-                            : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                        }`}
-                        aria-current={isActive ? "page" : undefined}
-                      >
-                        <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
-                        <span className="flex-1">{label}</span>
-                        {/* Live pending count badge — only on Doctor Verification */}
-                        {href === "/admin/doctor-verification" && pendingCount > 0 && (
-                          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 text-[10px] font-bold text-white leading-none">
-                            {pendingCount}
-                          </span>
-                        )}
-                        {/* Reported reviews badge — only on Reviews */}
-                        {href === "/admin/reviews" && reportedReviewsCount > 0 && (
-                          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white leading-none">
-                            {reportedReviewsCount}
-                          </span>
-                        )}
-                      </Link>
-                    </li>
-                  );
-
-                })}
-              </ul>
-            </div>
-          ))}
+                  })}
+                </ul>
+              </div>
+            );
+          })}
         </nav>
 
-        {/* Logout */}
-        <div className="border-t border-slate-800 px-3 py-4">
+        {/* Role badge + Logout */}
+        <div className="border-t border-slate-800 px-3 py-4 space-y-2">
+          {roleMeta && (
+            <div className="px-3 py-2 rounded-lg bg-slate-800/60">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 mb-0.5">Your Role</p>
+              <p className="text-xs font-semibold text-slate-300">{roleMeta.label}</p>
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-all hover:bg-slate-800 hover:text-white"

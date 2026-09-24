@@ -27,6 +27,7 @@ import type { AdminNotification, NotificationCategory, NotificationTarget } from
 import Pagination from "@/components/ui/Pagination";
 import { LoadingState, EmptyState } from "@/components/ui/StateViews";
 import SendNotificationModal from "@/features/admin-portal/components/SendNotificationModal";
+import { hasPermission } from "@/lib/admin/permissions";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -260,6 +261,9 @@ function NotificationDetailPanel({
 export default function AdminNotificationsPage() {
   const dispatch = useAppDispatch();
   const notifications = useAppSelector((s) => s.adminNotifications.notifications);
+  const currentAdmin = useAppSelector((s) => s.adminAuth.admin);
+  const canCreateNotifs = hasPermission(currentAdmin, "notifications", "create");
+  const canDeleteNotifs = hasPermission(currentAdmin, "notifications", "delete");
 
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -361,14 +365,16 @@ export default function AdminNotificationsPage() {
             Broadcast announcements, alerts, and reminders to platform users.
           </p>
         </div>
-        <button
-          id="send-notification-open"
-          onClick={() => setSendModalOpen(true)}
-          className="flex items-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-700 transition-colors shadow-sm"
-        >
-          <Send size={15} />
-          Send Notification
-        </button>
+        {canCreateNotifs && (
+          <button
+            id="send-notification-open"
+            onClick={() => setSendModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-700 transition-colors shadow-sm"
+          >
+            <Send size={15} />
+            Send Notification
+          </button>
+        )}
       </div>
 
       {/* Just-sent toast */}
@@ -573,19 +579,21 @@ export default function AdminNotificationsPage() {
                               >
                                 {isSelected ? "Close" : "View"}
                               </button>
-                              <button
-                                id={`notif-delete-${notif.id}`}
-                                onClick={(e) => handleDelete(notif.id, e)}
-                                disabled={isDeleting}
-                                title="Delete notification"
-                                className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50"
-                              >
-                                {isDeleting ? (
-                                  <Loader2 size={12} className="animate-spin" />
-                                ) : (
-                                  <Trash2 size={12} />
-                                )}
-                              </button>
+                              {canDeleteNotifs && (
+                                <button
+                                  id={`notif-delete-${notif.id}`}
+                                  onClick={(e) => handleDelete(notif.id, e)}
+                                  disabled={isDeleting}
+                                  title="Delete notification"
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50"
+                                >
+                                  {isDeleting ? (
+                                    <Loader2 size={12} className="animate-spin" />
+                                  ) : (
+                                    <Trash2 size={12} />
+                                  )}
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
