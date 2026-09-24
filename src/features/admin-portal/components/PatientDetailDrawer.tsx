@@ -15,6 +15,7 @@ import { setPatientAccountStatus, refreshPatients } from "@/store/slices/patient
 import { logAdminAction } from "@/store/slices/auditLogsSlice";
 import { getUserHealthProfile } from "@/lib/mock-data/userProfiles";
 import { getComputedAppointmentStatus } from "@/lib/mock-data/appointments";
+import { hasPermission } from "@/lib/admin/permissions";
 import type { PatientUser } from "@/types/user";
 
 type Props = {
@@ -97,6 +98,8 @@ const fmtTime = (iso: string) =>
 export default function PatientDetailDrawer({ patient, open, onClose }: Props) {
   const dispatch = useAppDispatch();
   const allAppointments = useAppSelector((s) => s.appointments.appointments);
+  const currentAdmin = useAppSelector((s) => s.adminAuth.admin);
+  const canEditPatients = hasPermission(currentAdmin, "patients", "edit");
 
   const [dialog, setDialog] = useState<"activate_patient" | "deactivate_patient" | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -362,23 +365,25 @@ export default function PatientDetailDrawer({ patient, open, onClose }: Props) {
         </div>
 
         {/* ── Action Footer ── */}
-        <div className="border-t border-[var(--line)] px-6 py-4">
-          {isActive ? (
-            <button
-              onClick={() => setDialog("deactivate_patient")}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
-            >
-              <PowerOff size={15} /> Deactivate Account
-            </button>
-          ) : (
-            <button
-              onClick={() => setDialog("activate_patient")}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
-            >
-              <Power size={15} /> Activate Account
-            </button>
-          )}
-        </div>
+        {canEditPatients && (
+          <div className="border-t border-[var(--line)] px-6 py-4">
+            {isActive ? (
+              <button
+                onClick={() => setDialog("deactivate_patient")}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+              >
+                <PowerOff size={15} /> Deactivate Account
+              </button>
+            ) : (
+              <button
+                onClick={() => setDialog("activate_patient")}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+              >
+                <Power size={15} /> Activate Account
+              </button>
+            )}
+          </div>
+        )}
       </aside>
 
       {/* Confirmation Dialog */}

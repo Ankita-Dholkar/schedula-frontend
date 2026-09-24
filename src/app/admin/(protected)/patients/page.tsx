@@ -16,6 +16,7 @@ import Pagination from "@/components/ui/Pagination";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/StateViews";
 import PatientDetailDrawer from "@/features/admin-portal/components/PatientDetailDrawer";
 import ConfirmationDialog from "@/features/admin-portal/components/ConfirmationDialog";
+import { hasPermission } from "@/lib/admin/permissions";
 import type { PatientUser } from "@/types/user";
 
 const PAGE_SIZE = 8;
@@ -88,6 +89,8 @@ export default function AdminPatientsPage() {
   const dispatch = useAppDispatch();
   const patients = useAppSelector((s) => s.patients.patients);
   const allAppointments = useAppSelector((s) => s.appointments.appointments);
+  const currentAdmin = useAppSelector((s) => s.adminAuth.admin);
+  const canEditPatients = hasPermission(currentAdmin, "patients", "edit");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -423,26 +426,28 @@ export default function AdminPatientsPage() {
                             >
                               View Profile
                             </button>
-                            {isActive ? (
-                              <button
-                                id={`patient-deactivate-${patient.id}`}
-                                onClick={() =>
-                                  setConfirmDialog({ patient, mode: "deactivate_patient" })
-                                }
-                                className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
-                              >
-                                Deactivate
-                              </button>
-                            ) : (
-                              <button
-                                id={`patient-activate-${patient.id}`}
-                                onClick={() =>
-                                  setConfirmDialog({ patient, mode: "activate_patient" })
-                                }
-                                className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
-                              >
-                                Activate
-                              </button>
+                            {canEditPatients && (
+                              isActive ? (
+                                <button
+                                  id={`patient-deactivate-${patient.id}`}
+                                  onClick={() =>
+                                    setConfirmDialog({ patient, mode: "deactivate_patient" })
+                                  }
+                                  className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+                                >
+                                  Deactivate
+                                </button>
+                              ) : (
+                                <button
+                                  id={`patient-activate-${patient.id}`}
+                                  onClick={() =>
+                                    setConfirmDialog({ patient, mode: "activate_patient" })
+                                  }
+                                  className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                >
+                                  Activate
+                                </button>
+                              )
                             )}
                           </div>
                         </td>

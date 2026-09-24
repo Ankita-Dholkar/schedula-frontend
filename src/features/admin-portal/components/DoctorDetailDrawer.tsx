@@ -7,9 +7,10 @@ import type { Doctor, DoctorDocument } from "@/types/doctor";
 import type { BadgeVariant } from "@/components/ui/Badge";
 import DocumentViewerModal from "./DocumentViewerModal";
 import ConfirmationDialog from "./ConfirmationDialog";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setDoctorVerificationStatus, setDoctorAccountStatus, refreshDoctors } from "@/store/slices/doctorsSlice";
 import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { hasPermission } from "@/lib/admin/permissions";
 
 type Props = {
   doctor: Doctor | null;
@@ -45,6 +46,9 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
 
 export default function DoctorDetailDrawer({ doctor, open, onClose }: Props) {
   const dispatch = useAppDispatch();
+  const currentAdmin = useAppSelector((s) => s.adminAuth.admin);
+  const canApproveReject = hasPermission(currentAdmin, "doctor_verification", "approve_reject");
+  const canEditDoctor = hasPermission(currentAdmin, "doctors", "edit");
 
   const [viewDoc, setViewDoc] = useState<DoctorDocument | null>(null);
   const [dialog, setDialog] = useState<"approve" | "reject" | "activate" | "deactivate" | null>(null);
@@ -256,59 +260,63 @@ export default function DoctorDetailDrawer({ doctor, open, onClose }: Props) {
         </div>
 
         {/* Action Footer */}
-        <div className="border-t border-[var(--line)] px-6 py-4 space-y-2">
-          {/* Verification actions — shown only if pending or if showing for context */}
-          {isPending && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setDialog("approve")}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
-              >
-                <ShieldCheck size={15} /> Approve
-              </button>
-              <button
-                onClick={() => setDialog("reject")}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700 transition-colors"
-              >
-                <ShieldOff size={15} /> Reject
-              </button>
-            </div>
-          )}
+        {(canApproveReject || canEditDoctor) && (
+          <div className="border-t border-[var(--line)] px-6 py-4 space-y-2">
+            {/* Verification actions — shown only if pending and admin has approve_reject permission */}
+            {isPending && canApproveReject && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setDialog("approve")}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
+                >
+                  <ShieldCheck size={15} /> Approve
+                </button>
+                <button
+                  onClick={() => setDialog("reject")}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700 transition-colors"
+                >
+                  <ShieldOff size={15} /> Reject
+                </button>
+              </div>
+            )}
 
-          {/* Account status toggle */}
-          {isActive ? (
-            <button
-              onClick={() => setDialog("deactivate")}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
-            >
-              <PowerOff size={15} /> Deactivate Account
-            </button>
-          ) : (
-            <button
-              disabled={cannotActivate}
-              title={
-                isPending
-                  ? "Cannot activate account until doctor verification is approved"
-                  : isRejected
-                  ? "Cannot activate account while verification is rejected"
-                  : undefined
-              }
-              onClick={() => setDialog("activate")}
-              className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors ${
-                cannotActivate
-                  ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
-                  : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-              }`}
-            >
-              <Power size={15} />{" "}
-              {isPending
-                ? "Account Inactive (Pending Approval)"
-                : isRejected
-                ? "Account Inactive (Application Rejected)"
-                : "Activate Account"}
-            </button>
-          )}
-        </div>
+            {/* Account status toggle — shown only if admin has edit permission */}
+            {canEditDoctor && (
+              isActive ? (
+                <button
+                  onClick={() => setDialog("deactivate")}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+                >
+                  <PowerOff size={15} /> Deactivate Account
+                </button>
+              ) : (
+                <button
+                  disabled={cannotActivate}
+                  title={
+                    isPending
+                      ? "Cannot activate account until doctor verification is approved"
+                      : isRejected
+                      ? "Cannot activate account while verification is rejected"
+                      : undefined
+                  }
+                  onClick={() => setDialog("activate")}
+                  className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    cannotActivate
+                      ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  }`}
+                >
+                  <Power size={15} />{" "}
+                  {isPending
+                    ? "Account Inactive (Pending Approval)"
+                    : isRejected
+                    ? "Account Inactive (Application Rejected)"
+                    : "Activate Account"}
+                </button>
+              )
+            )}
+          </div>
+        )}
       </aside>
 
       {/* Nested modals */}

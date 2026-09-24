@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Shield, AlertCircle, Loader2 } from "lucide-react";
 import { adminLogin } from "@/features/auth/api/adminLogin";
 import { setAdminUser } from "@/store/slices/adminAuthSlice";
+import { hydrateAdminManagement } from "@/store/slices/adminManagementSlice";
 import { useAppDispatch } from "@/store/hooks";
 
 const STORAGE_KEY = "loggedInAdmin";
@@ -53,6 +54,7 @@ export default function AdminLoginForm() {
 
     // Dispatch to Redux (pure — no localStorage in reducer)
     dispatch(setAdminUser(result.admin));
+    dispatch(hydrateAdminManagement());
 
     // Persist session to dedicated localStorage key
     try {

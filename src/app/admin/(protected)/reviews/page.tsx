@@ -18,6 +18,7 @@ import type { Review } from "@/types/review";
 import Pagination from "@/components/ui/Pagination";
 import { LoadingState, EmptyState } from "@/components/ui/StateViews";
 import ReviewDetailModal from "@/features/admin-portal/components/ReviewDetailModal";
+import { hasPermission } from "@/lib/admin/permissions";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -130,6 +131,8 @@ function FilterSelect({
 export default function AdminReviewsPage() {
   const dispatch = useAppDispatch();
   const allReviews = useAppSelector(selectAllReviewsForAdmin);
+  const currentAdmin = useAppSelector((s) => s.adminAuth.admin);
+  const canEditReviews = hasPermission(currentAdmin, "reviews", "edit");
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("all");
@@ -541,25 +544,27 @@ export default function AdminReviewsPage() {
                             >
                               View
                             </button>
-                            <button
-                              id={`review-toggle-${review.id}`}
-                              onClick={(e) => handleQuickToggle(review, e)}
-                              disabled={isLoading}
-                              title={review.isHidden ? "Unhide review" : "Hide from public"}
-                              className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors disabled:opacity-50 ${
-                                review.isHidden
-                                  ? "border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                                  : "border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100"
-                              }`}
-                            >
-                              {isLoading ? (
-                                <Loader2 size={12} className="animate-spin" />
-                              ) : review.isHidden ? (
-                                <Eye size={12} />
-                              ) : (
-                                <EyeOff size={12} />
-                              )}
-                            </button>
+                            {canEditReviews && (
+                              <button
+                                id={`review-toggle-${review.id}`}
+                                onClick={(e) => handleQuickToggle(review, e)}
+                                disabled={isLoading}
+                                title={review.isHidden ? "Unhide review" : "Hide from public"}
+                                className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors disabled:opacity-50 ${
+                                  review.isHidden
+                                    ? "border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                                    : "border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100"
+                                }`}
+                              >
+                                {isLoading ? (
+                                  <Loader2 size={12} className="animate-spin" />
+                                ) : review.isHidden ? (
+                                  <Eye size={12} />
+                                ) : (
+                                  <EyeOff size={12} />
+                                )}
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
