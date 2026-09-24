@@ -69,10 +69,6 @@ function dayKey(iso: string): string {
   return iso.slice(0, 10);
 }
 
-function weekLabel(d: Date): string {
-  return d.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
-}
-
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function SectionCard({
@@ -157,18 +153,6 @@ function buildMonthBuckets(
     cursor.setMonth(cursor.getMonth() + 1);
   }
   return months;
-}
-
-function buildWeekBuckets(start: Date, end: Date = new Date()): Date[] {
-  const weeks: Date[] = [];
-  const cursor = new Date(start);
-  // align to Monday
-  cursor.setDate(cursor.getDate() - ((cursor.getDay() + 6) % 7));
-  while (cursor <= end) {
-    weeks.push(new Date(cursor));
-    cursor.setDate(cursor.getDate() + 7);
-  }
-  return weeks;
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
@@ -437,32 +421,42 @@ export default function AnalyticsPage() {
     { key: "rejected", label: "Rejected", color: "#ef4444", gradientId: "grad-vrejected" },
   ];
 
-  // ── Registration Bar (weekly for 7d/30d, monthly otherwise) ─────────────────
+  // ── Registration Bar (daily for 7d/30d, monthly otherwise) ─────────────────
 
   const registrationBarData = useMemo((): { data: BarGroup[]; series: BarSeries[] } => {
     if (range === "7d" || range === "30d") {
-      // Weekly
-      const weeks = buildWeekBuckets(
-        rangeStart ?? new Date(Date.now() - 30 * 86400000)
-      );
-      const data: BarGroup[] = weeks.map((weekStart) => {
-        const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
-        return {
-          label: weekLabel(weekStart),
-          Patients: allPatients.filter((p) => {
-            if (!p.registeredAt) return false;
-            const d = new Date(p.registeredAt);
-            return d >= weekStart && d < weekEnd;
-          }).length,
-          Doctors: doctors.filter((d) => {
-            if (!d.submittedAt) return false;
-            const dt = new Date(d.submittedAt);
-            return dt >= weekStart && dt < weekEnd;
-          }).length,
-        };
-      });
+      // Daily breakdown
+      const numDays = range === "7d" ? 7 : 30;
+      const days: BarGroup[] = [];
+      const now = new Date();
+
+      for (let i = numDays - 1; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        const nextD = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i + 1);
+
+        const label = d.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+
+        const patientsCount = allPatients.filter((p) => {
+          if (!p.registeredAt) return false;
+          const dt = new Date(p.registeredAt);
+          return dt >= d && dt < nextD;
+        }).length;
+
+        const doctorsCount = doctors.filter((doc) => {
+          if (!doc.submittedAt) return false;
+          const dt = new Date(doc.submittedAt);
+          return dt >= d && dt < nextD;
+        }).length;
+
+        days.push({
+          label,
+          Patients: patientsCount,
+          Doctors: doctorsCount,
+        });
+      }
+
       return {
-        data,
+        data: days,
         series: [
           { key: "Patients", label: "Patients", color: "#8b5cf6" },
           { key: "Doctors", label: "Doctors", color: "#0ea5e9" },
@@ -618,7 +612,11 @@ export default function AnalyticsPage() {
 
         <SectionCard
           title="Registration Breakdown"
-          subtitle="New users per period"
+          subtitle={
+            range === "7d" || range === "30d"
+              ? "Daily new users"
+              : "Monthly new users"
+          }
         >
           <BarComparisonChart
             data={registrationBarData.data}
