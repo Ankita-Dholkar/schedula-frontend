@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearAdminUser } from "@/store/slices/adminAuthSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import { selectAllReviewsForAdmin } from "@/store/slices/reviewsSlice";
 import { canViewModule } from "@/lib/admin/permissions";
 import type { AdminModule } from "@/types/admin";
@@ -96,6 +98,19 @@ export default function AdminSidebar({ open, onClose }: Props) {
   );
 
   const handleLogout = () => {
+    if (currentAdmin) {
+      dispatch(logAdminAction({
+        actor: getAuditActor(currentAdmin),
+        action: "ADMIN_LOGOUT",
+        entityType: "auth",
+        entityId: currentAdmin.id,
+        entityName: currentAdmin.name,
+        details: `Admin ${currentAdmin.name} logged out.`,
+        metadata: { email: currentAdmin.email },
+        ipAddress: "127.0.0.1",
+        severity: "info",
+      }));
+    }
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
     dispatch(clearAdminUser());
     onClose();

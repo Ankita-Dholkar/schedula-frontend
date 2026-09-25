@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { UserCheck, Clock, ShieldCheck, ShieldOff, FileText, Search, X, Calendar, BadgeCheck } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { refreshDoctors, setDoctorVerificationStatus } from "@/store/slices/doctorsSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import Badge from "@/components/ui/Badge";
 import type { BadgeVariant } from "@/components/ui/Badge";
 import { LoadingState, EmptyState } from "@/components/ui/StateViews";
@@ -99,6 +101,19 @@ export default function DoctorVerificationPage() {
       id: doctor.id,
       status,
       rejectionReason: mode === "reject" ? reason : undefined,
+    }));
+    dispatch(logAdminAction({
+      actor: getAuditActor(currentAdmin),
+      action: mode === "approve" ? "DOCTOR_VERIFIED" : "DOCTOR_REJECTED",
+      entityType: "doctor",
+      entityId: doctor.id,
+      entityName: doctor.name,
+      details: mode === "approve"
+        ? `Doctor verification approved for ${doctor.name} (${doctor.specialization}).`
+        : `Doctor verification rejected for ${doctor.name}. Reason: ${reason ?? "No reason provided"}.`,
+      metadata: { previousStatus: "pending", newStatus: status, rejectionReason: reason },
+      ipAddress: "127.0.0.1",
+      severity: mode === "approve" ? "info" : "warning",
     }));
     dispatch(refreshDoctors());
     setActionLoading(false);

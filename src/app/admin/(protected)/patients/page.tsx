@@ -10,6 +10,8 @@ import {
   refreshPatients,
   setPatientAccountStatus,
 } from "@/store/slices/patientsSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import { refreshAppointments } from "@/store/slices/appointmentsSlice";
 import Badge from "@/components/ui/Badge";
 import Pagination from "@/components/ui/Pagination";
@@ -224,9 +226,21 @@ export default function AdminPatientsPage() {
     setActionLoading(true);
     await new Promise((r) => setTimeout(r, 500));
     const { patient, mode } = confirmDialog;
+    const newStatus = mode === "activate_patient" ? "active" : "inactive";
     dispatch(setPatientAccountStatus({
       id: patient.id,
-      accountStatus: mode === "activate_patient" ? "active" : "inactive",
+      accountStatus: newStatus,
+    }));
+    dispatch(logAdminAction({
+      actor: getAuditActor(currentAdmin),
+      action: "PATIENT_STATUS_TOGGLED",
+      entityType: "patient",
+      entityId: patient.id,
+      entityName: patient.name,
+      details: `Patient account for ${patient.name} ${newStatus === "active" ? "activated" : "deactivated"} by admin.`,
+      metadata: { previousStatus: newStatus === "active" ? "inactive" : "active", newStatus },
+      ipAddress: "127.0.0.1",
+      severity: newStatus === "inactive" ? "warning" : "info",
     }));
     dispatch(refreshPatients());
     setActionLoading(false);

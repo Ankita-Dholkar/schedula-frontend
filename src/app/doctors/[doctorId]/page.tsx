@@ -3,14 +3,29 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { CheckCircle2, ArrowLeft, Stethoscope, Video, Building2, FileText, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  ArrowLeft,
+  Stethoscope,
+  Video,
+  Building2,
+  FileText,
+  ShieldCheck,
+  MapPin,
+  Clock,
+  Award,
+  GraduationCap,
+  UserCircle2,
+} from "lucide-react";
 import Link from "next/link";
 
-import { getAllDoctors } from "@/lib/mock-data/doctors";
-import { UserCircle2 } from "lucide-react";
+import { getAllDoctors, getDoctorFullAddress, formatDoctorLocation } from "@/lib/mock-data/doctors";
 import { getAllAppointments, saveAppointment, saveNotification } from "@/lib/mock-data/appointments";
 import { getDoctorAvailability, loadPersistedAvailability, saveDoctorAvailability } from "@/lib/mock-data/availability";
 import type { DoctorAvailability, TimeSlot } from "@/types/availability";
+import { useAppSelector } from "@/store/hooks";
+import { selectAverageRating, selectDoctorReviews } from "@/store/slices/reviewsSlice";
+import ReviewsDrawer from "@/features/doctors/components/ReviewsDrawer";
 
 import DateSelector from "@/features/booking/components/DateSelector";
 import SlotSelector from "@/features/booking/components/SlotSelector";
@@ -57,6 +72,17 @@ export default function DoctorBookingPage() {
   const [appointmentType, setAppointmentType] = useState("Consultation");
   const [appointmentMode, setAppointmentMode] = useState<"in-person" | "online">("in-person");
   const [reasonForVisit, setReasonForVisit] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Ratings & reviews for this doctor
+  const avgRating = useAppSelector((state) =>
+    selectAverageRating(state, doctor?.id || doctor?.name || doctorId)
+  );
+  const reviews = useAppSelector((state) =>
+    selectDoctorReviews(state, doctor?.id || doctor?.name || doctorId)
+  );
+  const reviewCount = reviews.length;
+
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   // doctor is resolved after auth check so we can merge localStorage registered doctors
   const [doctor, setDoctor] = useState<ReturnType<typeof getAllDoctors>[number] | null>(null);
@@ -67,9 +93,18 @@ export default function DoctorBookingPage() {
     if (!user) {
       router.push("/login");
     } else {
-      const found = getAllDoctors().find((d) => d.id === doctorId) ?? null;
-      setDoctor(found);
+      const loadDoctor = () => {
+        const found = getAllDoctors().find((d) => d.id === doctorId) ?? null;
+        setDoctor(found);
+      };
+      loadDoctor();
       setIsCheckingAuth(false);
+      window.addEventListener("storage", loadDoctor);
+      window.addEventListener("schedula_doctor_updated", loadDoctor);
+      return () => {
+        window.removeEventListener("storage", loadDoctor);
+        window.removeEventListener("schedula_doctor_updated", loadDoctor);
+      };
     }
   }, [router, doctorId]);
 
@@ -179,7 +214,9 @@ export default function DoctorBookingPage() {
       saveDoctorAvailability(updated);
     }
 
-    // 3. Create and save Appointment
+    const currentFee = appointmentType.toLowerCase().includes("check")
+      ? (doctor.checkupFee ?? 800)
+      : (doctor.consultationFee ?? 500);
     const aptDuration = daySchedule?.slotDuration ?? 30;
     const newAptId = `apt-${Date.now()}`;
     saveAppointment({
@@ -199,10 +236,14 @@ export default function DoctorBookingPage() {
       appointmentMode,
       ...(appointmentMode === "in-person"
         ? {
-            location: doctor.clinic ?? { name: "Main Campus Clinic" },
+            location: {
+              name: doctor.hospitalName || doctor.clinic?.name || "Consultation Clinic",
+              address: getDoctorFullAddress(doctor),
+            },
             room: undefined,
           }
         : {}),
+      consultationFee: currentFee,
     });
 
     saveNotification({
@@ -262,6 +303,18 @@ export default function DoctorBookingPage() {
                 <span className="text-[var(--muted)]">Mode</span>
                 <span className="font-medium text-[var(--ink)] capitalize">{appointmentMode === "online" ? "Online (Video)" : "In-person"}</span>
               </div>
+              {appointmentMode === "in-person" && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-[var(--muted)]">Location</span>
+                  <span className="font-medium text-[var(--ink)] text-right">{getDoctorFullAddress(doctor)}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-[var(--line)] pt-2.5">
+                <span className="text-[var(--muted)]">{appointmentType} Fee</span>
+                <span className="font-bold text-[var(--ink)]">
+                  ₹{appointmentType.toLowerCase().includes("check") ? (doctor.checkupFee ?? 800) : (doctor.consultationFee ?? 500)}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -293,49 +346,141 @@ export default function DoctorBookingPage() {
 
         {/* Doctor Info Card */}
         <section className="mt-5 w-full rounded-xl border border-[var(--line)] bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex gap-4">
-            <div className="relative h-[100px] w-[90px] shrink-0 overflow-hidden rounded-lg sm:h-[115px] sm:w-[105px]">
+          <div className="flex flex-col sm:flex-row gap-5">
+            {/* Doctor Avatar */}
+            <div className="relative h-[110px] w-[100px] shrink-0 overflow-hidden rounded-xl sm:h-[135px] sm:w-[120px]">
               {doctor.image ? (
                 <Image
                   src={doctor.image}
                   alt={doctor.name}
                   fill
                   priority
-                  sizes="(max-width: 640px) 90px, 105px"
+                  sizes="(max-width: 640px) 100px, 120px"
                   className="object-cover"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-teal-50">
-                  <UserCircle2 size={52} className="text-[var(--brand)] opacity-60" />
+                  <UserCircle2 size={60} className="text-[var(--brand)] opacity-60" />
                 </div>
               )}
             </div>
 
-            <div className="flex min-w-0 flex-1 flex-col justify-center">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="truncate text-[18px] font-semibold text-[var(--ink)] sm:text-[21px]">
-                  {doctor.name}
-                </h1>
-                {(doctor.verificationStatus === "approved" || doctor.verificationStatus === "verified") && (
-                  <div className="flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5">
-                    <ShieldCheck size={12} className="text-emerald-600" />
-                    <span className="text-[10px] font-bold text-emerald-700">Verified Doctor</span>
-                  </div>
-                )}
+            {/* Doctor Main Information */}
+            <div className="flex min-w-0 flex-1 flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1 className="text-[19px] font-bold text-[var(--ink)] sm:text-[22px]">
+                    {doctor.name}
+                  </h1>
+                  {(doctor.verificationStatus === "approved" || doctor.verificationStatus === "verified") && (
+                    <div className="flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5">
+                      <ShieldCheck size={12} className="text-emerald-600" />
+                      <span className="text-[10px] font-bold text-emerald-700">Verified Doctor</span>
+                    </div>
+                  )}
+                </div>
+
+                <p className="mt-0.5 text-sm font-semibold text-[var(--brand)]">
+                  {doctor.specialization}
+                </p>
+
+                {/* Rating + Reviews (Clickable) */}
+                <div className="mt-2 flex items-center gap-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setDrawerOpen(true)}
+                    title="Click to view patient reviews"
+                    className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 -ml-1 text-xs transition hover:bg-amber-50 group border border-transparent hover:border-amber-200"
+                  >
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <span
+                          key={s}
+                          className={`text-[12px] ${
+                            reviewCount > 0 && avgRating >= s
+                              ? "text-amber-400"
+                              : reviewCount > 0 && avgRating >= s - 0.5
+                              ? "text-amber-300"
+                              : "text-gray-200"
+                          }`}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    {reviewCount > 0 ? (
+                      <>
+                        <span className="font-bold text-[var(--ink)]">{avgRating.toFixed(1)}</span>
+                        <span className="text-[var(--muted)]">({reviewCount} reviews)</span>
+                      </>
+                    ) : (
+                      <span className="text-[var(--muted)]">No reviews yet</span>
+                    )}
+                    <span className="text-[10px] text-[var(--brand)] font-medium underline underline-offset-2 ml-1">View</span>
+                  </button>
+
+                  <span className="inline-block rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                    {doctor.availability}
+                  </span>
+                </div>
+
+                {/* Key metadata pills: Qualification, Experience, License, Fees */}
+                <div className="mt-3 flex items-center gap-2 flex-wrap text-xs text-[var(--muted)]">
+                  {doctor.qualification && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-stone-100 px-2.5 py-1 font-medium text-[var(--ink)]">
+                      <GraduationCap size={13} className="text-[var(--brand)]" />
+                      {doctor.qualification}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 rounded-md bg-stone-100 px-2.5 py-1 font-medium text-[var(--ink)]">
+                    <Award size={13} className="text-[var(--brand)]" />
+                    {doctor.experience}+ Years Exp
+                  </span>
+                  {doctor.licenseNumber && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-stone-100 px-2.5 py-1 text-[var(--muted)]">
+                      Reg: <strong className="font-medium text-[var(--ink)]">{doctor.licenseNumber}</strong>
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-100 px-2.5 py-1 font-semibold text-emerald-800">
+                    Consultation: ₹{doctor.consultationFee ?? 500}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 border border-teal-100 px-2.5 py-1 font-semibold text-teal-800">
+                    Check-up: ₹{doctor.checkupFee ?? 800}
+                  </span>
+                </div>
               </div>
-              <p className="mt-1 text-sm text-[var(--brand)]">
-                {doctor.specialization}
-              </p>
-              <p className="mt-1.5 text-sm text-[var(--muted)]">
-                {doctor.experience}+ Years Experience
-              </p>
-              <span className="mt-2 inline-block w-fit rounded-md bg-emerald-50 px-2 py-1 text-[11px] text-emerald-700">
-                {doctor.availability}
-              </span>
+
+              {/* Location & Consultation Hours Strip */}
+              <div className="mt-3.5 pt-3 border-t border-[var(--line)] grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {/* Location Info */}
+                <div className="flex items-start gap-2 rounded-lg bg-[var(--canvas)] p-2.5 border border-[var(--line)]">
+                  <MapPin size={15} className="text-[var(--brand)] mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[var(--ink)] truncate">
+                      {doctor.hospitalName || doctor.clinic?.name || "Consultation Clinic"}
+                    </p>
+                    <p className="text-[11px] text-[var(--muted)] line-clamp-1 mt-0.5">
+                      {getDoctorFullAddress(doctor)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Consultation Timings */}
+                <div className="flex items-start gap-2 rounded-lg bg-[var(--canvas)] p-2.5 border border-[var(--line)]">
+                  <Clock size={15} className="text-[var(--brand)] mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[var(--ink)]">Consultation Hours</p>
+                    <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                      {doctor.availableTime || "09:00 AM - 05:00 PM"}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="mt-4 border-t border-[var(--line)] pt-3">
+          {/* About Doctor section */}
+          <div className="mt-4 border-t border-[var(--line)] pt-3.5">
             <h3 className="text-sm font-semibold text-[var(--ink)]">
               About Doctor
             </h3>
@@ -344,6 +489,15 @@ export default function DoctorBookingPage() {
             </p>
           </div>
         </section>
+
+        {/* Patient Reviews Slide-in Drawer */}
+        <ReviewsDrawer
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          doctorName={doctor.name}
+          avgRating={avgRating}
+          reviews={reviews}
+        />
 
         {/* ── Appointment Details ─────────────────────────────────────── */}
         <section className="mt-5 w-full rounded-xl border border-[var(--line)] bg-white p-5 shadow-sm">
@@ -357,21 +511,32 @@ export default function DoctorBookingPage() {
             <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
               <Stethoscope size={12} /> Appointment Type
             </label>
-            <div className="flex flex-wrap gap-2">
-              {["Consultation", "Check-up", "Follow-up", "Urgent"].map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setAppointmentType(t)}
-                  className={`rounded-lg border px-4 py-1.5 text-sm font-medium transition ${
-                    appointmentType === t
-                      ? "border-[var(--brand)] bg-[var(--brand)] text-white"
-                      : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-2.5">
+              {["Consultation", "Check-up"].map((t) => {
+                const fee = t.toLowerCase().includes("check") ? (doctor.checkupFee ?? 800) : (doctor.consultationFee ?? 500);
+                const isSelected = appointmentType === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setAppointmentType(t)}
+                    className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition ${
+                      isSelected
+                        ? "border-[var(--brand)] bg-[var(--brand)] text-white shadow-sm"
+                        : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                    }`}
+                  >
+                    <span>{t}</span>
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-xs font-bold ${
+                        isSelected ? "bg-white/20 text-white" : "bg-stone-100 text-[var(--ink)]"
+                      }`}
+                    >
+                      ₹{fee}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

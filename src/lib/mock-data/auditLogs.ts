@@ -8,17 +8,42 @@ const STORAGE_KEY = "adminAuditLogs";
 const now = Date.now();
 const daysAgo = (n: number) => new Date(now - n * 86400000).toISOString();
 
+// Demo Admin Personas
+const ACTOR_SUPER_ADMIN = {
+  id: "admin-001",
+  name: "Schedula Admin",
+  email: "admin123@schedula.com",
+  role: "admin" as const,
+  adminRole: "super_admin" as const,
+};
+
+const ACTOR_OPS_ADMIN = {
+  id: "admin-002",
+  name: "Ops Admin",
+  email: "ops@schedula.com",
+  role: "admin" as const,
+  adminRole: "admin" as const,
+};
+
+const ACTOR_SUPPORT = {
+  id: "admin-003",
+  name: "Support Staff",
+  email: "support@schedula.com",
+  role: "admin" as const,
+  adminRole: "support" as const,
+};
+
 export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-001",
     timestamp: daysAgo(0.1),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_OPS_ADMIN,
     action: "DOCTOR_VERIFIED",
     actionLabel: AUDIT_ACTION_LABELS.DOCTOR_VERIFIED,
     entityType: "doctor",
     entityId: "doc-3",
     entityName: "Dr. Martin Cole",
-    details: "Doctor verification approved. License PSY1003 verified by Medical Council of India.",
+    details: "Doctor verification approved by Ops Admin. License PSY1003 verified by Medical Council of India.",
     metadata: { previousStatus: "pending", newStatus: "approved", licenseNumber: "PSY1003" },
     ipAddress: "192.168.1.1",
     severity: "info",
@@ -26,13 +51,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-002",
     timestamp: daysAgo(0.5),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPPORT,
     action: "REVIEW_HIDDEN",
     actionLabel: AUDIT_ACTION_LABELS.REVIEW_HIDDEN,
     entityType: "review",
     entityId: "rev-009",
     entityName: "Review by Ethan Brooks on Dr. Anika Rao",
-    details: "Reported review hidden after admin moderation. Review flagged for inappropriate content.",
+    details: "Reported review hidden after Support Staff moderation. Review flagged for inappropriate content.",
     metadata: { reviewRating: 1, reportCount: 3 },
     ipAddress: "192.168.1.1",
     severity: "warning",
@@ -40,7 +65,7 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-003",
     timestamp: daysAgo(1),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPER_ADMIN,
     action: "NOTIFICATION_BROADCAST",
     actionLabel: AUDIT_ACTION_LABELS.NOTIFICATION_BROADCAST,
     entityType: "notification",
@@ -54,13 +79,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-004",
     timestamp: daysAgo(1.5),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_OPS_ADMIN,
     action: "DOCTOR_REJECTED",
     actionLabel: AUDIT_ACTION_LABELS.DOCTOR_REJECTED,
     entityType: "doctor",
     entityId: "doc-7",
     entityName: "Dr. Amara Osei",
-    details: "Doctor verification rejected. Submitted license documents could not be validated with the issuing authority.",
+    details: "Doctor verification rejected by Ops Admin. Submitted license documents could not be validated with the issuing authority.",
     metadata: { previousStatus: "pending", newStatus: "rejected", rejectionReason: "Documents could not be verified with issuing authority" },
     ipAddress: "192.168.1.1",
     severity: "warning",
@@ -68,7 +93,7 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-005",
     timestamp: daysAgo(2),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_OPS_ADMIN,
     action: "PATIENT_STATUS_TOGGLED",
     actionLabel: AUDIT_ACTION_LABELS.PATIENT_STATUS_TOGGLED,
     entityType: "patient",
@@ -82,13 +107,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-006",
     timestamp: daysAgo(2.5),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPPORT,
     action: "APPOINTMENT_CANCELLED",
     actionLabel: AUDIT_ACTION_LABELS.APPOINTMENT_CANCELLED,
     entityType: "appointment",
     entityId: "apt-1045",
     entityName: "Noah Williams with Dr. Anika Rao",
-    details: "Appointment cancelled by admin. Reason: Schedule conflict reported by patient.",
+    details: "Appointment cancelled by Support Staff. Reason: Schedule conflict reported by patient.",
     metadata: { appointmentDate: "2026-08-30", previousStatus: "confirmed", cancellationReason: "Schedule conflict" },
     ipAddress: "192.168.1.1",
     severity: "info",
@@ -96,7 +121,7 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-007",
     timestamp: daysAgo(3),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_OPS_ADMIN,
     action: "DOCTOR_STATUS_TOGGLED",
     actionLabel: AUDIT_ACTION_LABELS.DOCTOR_STATUS_TOGGLED,
     entityType: "doctor",
@@ -110,13 +135,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-008",
     timestamp: daysAgo(4),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPPORT,
     action: "REVIEW_RESTORED",
     actionLabel: AUDIT_ACTION_LABELS.REVIEW_RESTORED,
     entityType: "review",
     entityId: "rev-005",
     entityName: "Review by Maya Patel on Dr. Prakash Das",
-    details: "Previously hidden review restored after further review determined content was within platform guidelines.",
+    details: "Previously hidden review restored after Support Staff determined content was within platform guidelines.",
     metadata: { reviewRating: 4 },
     ipAddress: "192.168.1.1",
     severity: "info",
@@ -124,7 +149,7 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-009",
     timestamp: daysAgo(5),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_OPS_ADMIN,
     action: "NOTIFICATION_BROADCAST",
     actionLabel: AUDIT_ACTION_LABELS.NOTIFICATION_BROADCAST,
     entityType: "notification",
@@ -138,7 +163,7 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-010",
     timestamp: daysAgo(6),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_OPS_ADMIN,
     action: "DOCTOR_VERIFIED",
     actionLabel: AUDIT_ACTION_LABELS.DOCTOR_VERIFIED,
     entityType: "doctor",
@@ -152,7 +177,7 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-011",
     timestamp: daysAgo(7),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPPORT,
     action: "PAYMENT_REFUNDED",
     actionLabel: AUDIT_ACTION_LABELS.PAYMENT_REFUNDED,
     entityType: "payment",
@@ -166,7 +191,7 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-012",
     timestamp: daysAgo(8),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_OPS_ADMIN,
     action: "PATIENT_STATUS_TOGGLED",
     actionLabel: AUDIT_ACTION_LABELS.PATIENT_STATUS_TOGGLED,
     entityType: "patient",
@@ -180,13 +205,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-013",
     timestamp: daysAgo(9),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPPORT,
     action: "REVIEW_HIDDEN",
     actionLabel: AUDIT_ACTION_LABELS.REVIEW_HIDDEN,
     entityType: "review",
     entityId: "rev-012",
     entityName: "Review by Lena Moore on Dr. Sarah Wilson",
-    details: "Review flagged and hidden. Patient reported the review contained misleading information.",
+    details: "Review flagged and hidden by Support Staff. Patient reported the review contained misleading information.",
     metadata: { reviewRating: 2, reportCount: 1 },
     ipAddress: "192.168.1.1",
     severity: "warning",
@@ -194,7 +219,7 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-014",
     timestamp: daysAgo(10),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_OPS_ADMIN,
     action: "DOCTOR_STATUS_TOGGLED",
     actionLabel: AUDIT_ACTION_LABELS.DOCTOR_STATUS_TOGGLED,
     entityType: "doctor",
@@ -208,7 +233,7 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-015",
     timestamp: daysAgo(12),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPER_ADMIN,
     action: "NOTIFICATION_BROADCAST",
     actionLabel: AUDIT_ACTION_LABELS.NOTIFICATION_BROADCAST,
     entityType: "notification",
@@ -222,13 +247,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-016",
     timestamp: daysAgo(14),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPPORT,
     action: "APPOINTMENT_CANCELLED",
     actionLabel: AUDIT_ACTION_LABELS.APPOINTMENT_CANCELLED,
     entityType: "appointment",
     entityId: "apt-1049",
     entityName: "James Turner with Dr. Prakash Das",
-    details: "Admin cancelled appointment at patient's request due to medical emergency on patient side.",
+    details: "Appointment cancelled by Support Staff at patient's request due to medical emergency on patient side.",
     metadata: { appointmentDate: "2026-08-31", previousStatus: "confirmed", cancellationReason: "Patient medical emergency" },
     ipAddress: "192.168.1.1",
     severity: "info",
@@ -236,13 +261,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-017",
     timestamp: daysAgo(15),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_OPS_ADMIN,
     action: "DOCTOR_VERIFIED",
     actionLabel: AUDIT_ACTION_LABELS.DOCTOR_VERIFIED,
     entityType: "doctor",
     entityId: "doc-5",
     entityName: "Dr. Raj Kumar",
-    details: "Doctor verification approved. Orthopedics specialization confirmed. License RJ2001 validated.",
+    details: "Doctor verification approved by Ops Admin. Orthopedics specialization confirmed. License RJ2001 validated.",
     metadata: { previousStatus: "pending", newStatus: "approved", licenseNumber: "RJ2001" },
     ipAddress: "192.168.1.1",
     severity: "info",
@@ -250,13 +275,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-018",
     timestamp: daysAgo(18),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPPORT,
     action: "PAYMENT_REFUNDED",
     actionLabel: AUDIT_ACTION_LABELS.PAYMENT_REFUNDED,
     entityType: "payment",
     entityId: "pay-1059",
     entityName: "Payment by Sofia Chen (apt-1044)",
-    details: "Refund of ₹500 recorded. Doctor unavailable — appointment cancelled by clinic.",
+    details: "Refund of ₹500 recorded by Support Staff. Doctor unavailable — appointment cancelled by clinic.",
     metadata: { refundAmount: 500, refundId: "REFUND-58301002", reason: "Doctor unavailable — appointment cancelled by clinic" },
     ipAddress: "192.168.1.1",
     severity: "info",
@@ -264,7 +289,7 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-019",
     timestamp: daysAgo(20),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_OPS_ADMIN,
     action: "PATIENT_STATUS_TOGGLED",
     actionLabel: AUDIT_ACTION_LABELS.PATIENT_STATUS_TOGGLED,
     entityType: "patient",
@@ -278,13 +303,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-020",
     timestamp: daysAgo(22),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPER_ADMIN,
     action: "DOCTOR_REJECTED",
     actionLabel: AUDIT_ACTION_LABELS.DOCTOR_REJECTED,
     entityType: "doctor",
     entityId: "doc-9",
     entityName: "Dr. Felix Wagner",
-    details: "Verification rejected. Degree certificate submitted appears tampered. Escalated to compliance.",
+    details: "Verification rejected by Super Admin. Degree certificate submitted appears tampered. Escalated to compliance.",
     metadata: { previousStatus: "pending", newStatus: "rejected", rejectionReason: "Degree certificate appears tampered — escalated to compliance" },
     ipAddress: "192.168.1.1",
     severity: "critical",
@@ -292,13 +317,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-021",
     timestamp: daysAgo(25),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPER_ADMIN,
     action: "ADMIN_LOGIN",
     actionLabel: AUDIT_ACTION_LABELS.ADMIN_LOGIN,
     entityType: "auth",
     entityId: "admin-001",
-    entityName: "Super Admin",
-    details: "Admin logged into the Schedula Admin Portal successfully.",
+    entityName: "Schedula Admin",
+    details: "Schedula Admin logged into the Schedula Admin Portal successfully.",
     metadata: { userAgent: "Chrome/127" },
     ipAddress: "192.168.1.1",
     severity: "info",
@@ -306,13 +331,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-022",
     timestamp: daysAgo(28),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPPORT,
     action: "REVIEW_HIDDEN",
     actionLabel: AUDIT_ACTION_LABELS.REVIEW_HIDDEN,
     entityType: "review",
     entityId: "rev-018",
     entityName: "Review by Priya Sharma on Dr. Martin Cole",
-    details: "Review hidden. Content flagged as spam — identical review posted across 4 doctors.",
+    details: "Review hidden by Support Staff. Content flagged as spam — identical review posted across 4 doctors.",
     metadata: { reviewRating: 1, reportCount: 4, flagReason: "spam" },
     ipAddress: "192.168.1.1",
     severity: "warning",
@@ -320,7 +345,7 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-023",
     timestamp: daysAgo(30),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_OPS_ADMIN,
     action: "DOCTOR_STATUS_TOGGLED",
     actionLabel: AUDIT_ACTION_LABELS.DOCTOR_STATUS_TOGGLED,
     entityType: "doctor",
@@ -334,13 +359,13 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-024",
     timestamp: daysAgo(35),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPPORT,
     action: "APPOINTMENT_RESCHEDULED",
     actionLabel: AUDIT_ACTION_LABELS.APPOINTMENT_RESCHEDULED,
     entityType: "appointment",
     entityId: "apt-1055",
     entityName: "Alex Smith with Dr. Sarah Wilson",
-    details: "Appointment rescheduled by admin at patient's request. New date: 2026-09-20.",
+    details: "Appointment rescheduled by Support Staff at patient's request. New date: 2026-09-20.",
     metadata: { originalDate: "2026-09-10", newDate: "2026-09-20", rescheduleReason: "Patient travel conflict" },
     ipAddress: "192.168.1.1",
     severity: "info",
@@ -348,16 +373,44 @@ export const seedAuditLogs: AuditLog[] = [
   {
     id: "al-025",
     timestamp: daysAgo(40),
-    actor: { id: "admin-001", name: "Admin", email: "admin@schedula.com", role: "admin" },
+    actor: ACTOR_SUPPORT,
     action: "PAYMENT_REFUNDED",
     actionLabel: AUDIT_ACTION_LABELS.PAYMENT_REFUNDED,
     entityType: "payment",
     entityId: "pay-1060",
     entityName: "Payment by Alex Smith (apt-1050)",
-    details: "Refund of ₹500 recorded. Patient rescheduled and duplicate payment was identified.",
+    details: "Refund of ₹500 recorded by Support Staff. Patient rescheduled and duplicate payment was identified.",
     metadata: { refundAmount: 500, refundId: "REFUND-59031003", reason: "Patient rescheduled and duplicate payment identified" },
     ipAddress: "192.168.1.1",
     severity: "info",
+  },
+  {
+    id: "al-026",
+    timestamp: daysAgo(45),
+    actor: ACTOR_SUPER_ADMIN,
+    action: "ADMIN_USER_CREATED",
+    actionLabel: AUDIT_ACTION_LABELS.ADMIN_USER_CREATED,
+    entityType: "auth",
+    entityId: "admin-002",
+    entityName: "Ops Admin",
+    details: "New admin account 'Ops Admin' created with role 'admin' by Schedula Admin.",
+    metadata: { assignedRole: "admin", targetEmail: "ops@schedula.com" },
+    ipAddress: "192.168.1.1",
+    severity: "info",
+  },
+  {
+    id: "al-027",
+    timestamp: daysAgo(50),
+    actor: ACTOR_SUPER_ADMIN,
+    action: "PLATFORM_SETTINGS_UPDATED",
+    actionLabel: AUDIT_ACTION_LABELS.PLATFORM_SETTINGS_UPDATED,
+    entityType: "system",
+    entityId: "platform-settings",
+    entityName: "Platform Settings",
+    details: "Platform configuration updated by Schedula Admin (platform name, commission rate, and maintenance mode settings).",
+    metadata: { updatedBy: "Schedula Admin", adminRole: "super_admin" },
+    ipAddress: "192.168.1.1",
+    severity: "warning",
   },
 ];
 
@@ -369,12 +422,23 @@ export function loadAuditLogs(): AuditLog[] {
     if (raw) {
       let parsed: AuditLog[] = JSON.parse(raw);
       if (parsed.length > 0) {
-        // Migrate existing logs that might still have "Super Admin"
+        // Migrate existing logs that might still lack adminRole or have old placeholder names
         let changed = false;
         parsed = parsed.map((log) => {
-          if (log.actor.name === "Super Admin") {
+          if (log.actor.role === "admin" && (!log.actor.adminRole || log.actor.name === "Admin" || log.actor.name === "Super Admin")) {
             changed = true;
-            return { ...log, actor: { ...log.actor, name: "Admin" } };
+            const adminRole = log.actor.id === "admin-002" ? "admin" : log.actor.id === "admin-003" ? "support" : "super_admin";
+            const name = log.actor.id === "admin-002" ? "Ops Admin" : log.actor.id === "admin-003" ? "Support Staff" : "Schedula Admin";
+            const email = log.actor.id === "admin-002" ? "ops@schedula.com" : log.actor.id === "admin-003" ? "support@schedula.com" : "admin123@schedula.com";
+            return {
+              ...log,
+              actor: {
+                ...log.actor,
+                name: log.actor.name === "Admin" || log.actor.name === "Super Admin" ? name : log.actor.name,
+                email: log.actor.email === "admin@schedula.com" ? email : log.actor.email,
+                adminRole,
+              },
+            };
           }
           return log;
         });

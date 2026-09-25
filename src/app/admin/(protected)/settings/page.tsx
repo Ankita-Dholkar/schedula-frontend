@@ -25,6 +25,8 @@ import {
   selectAllAdmins,
 } from "@/store/slices/adminManagementSlice";
 import { loadAdminUsers, saveAdminUsers } from "@/lib/mock-data/admins";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import { hasPermission } from "@/lib/admin/permissions";
 import {
   ROLE_META,
@@ -139,6 +141,17 @@ export default function AdminSettingsPage() {
       };
       dispatch(updateAdminProfile(changes));
       dispatch(updateAdmin({ id: currentAdmin.id, changes }));
+      dispatch(logAdminAction({
+        actor: getAuditActor(currentAdmin),
+        action: "ADMIN_PROFILE_UPDATED",
+        entityType: "admin_user",
+        entityId: currentAdmin.id,
+        entityName: currentAdmin.name,
+        details: `Admin profile updated for ${currentAdmin.name}.`,
+        metadata: { changes },
+        ipAddress: "127.0.0.1",
+        severity: "info",
+      }));
       // Update localStorage session
       try {
         const raw = localStorage.getItem("loggedInAdmin");
@@ -184,6 +197,17 @@ export default function AdminSettingsPage() {
     );
     saveAdminUsers(updatedAdmins);
     dispatch(updateAdmin({ id: currentAdmin!.id, changes: { password: secForm.newPass.trim() } }));
+    dispatch(logAdminAction({
+      actor: getAuditActor(currentAdmin),
+      action: "ADMIN_PASSWORD_CHANGED",
+      entityType: "admin_user",
+      entityId: currentAdmin!.id,
+      entityName: currentAdmin!.name,
+      details: `Password changed for admin account ${currentAdmin!.email}.`,
+      metadata: { email: currentAdmin!.email },
+      ipAddress: "127.0.0.1",
+      severity: "warning",
+    }));
 
     setSecForm({ current: "", newPass: "", confirm: "" });
     setSecLoading(false);
@@ -260,6 +284,17 @@ export default function AdminSettingsPage() {
     setPlatformLoading(true);
     await new Promise((r) => setTimeout(r, 400));
     dispatch(updatePlatformSettings(platformForm));
+    dispatch(logAdminAction({
+      actor: getAuditActor(currentAdmin),
+      action: "PLATFORM_SETTINGS_UPDATED",
+      entityType: "settings",
+      entityId: "platform-settings",
+      entityName: "Platform Settings",
+      details: `Platform settings updated by ${currentAdmin?.name ?? "Super Admin"}.`,
+      metadata: { settings: platformForm },
+      ipAddress: "127.0.0.1",
+      severity: "warning",
+    }));
     setPlatformLoading(false);
     showToast("Platform settings saved.");
   };
@@ -268,6 +303,17 @@ export default function AdminSettingsPage() {
     setPlatformLoading(true);
     await new Promise((r) => setTimeout(r, 300));
     dispatch(resetPlatformSettings());
+    dispatch(logAdminAction({
+      actor: getAuditActor(currentAdmin),
+      action: "PLATFORM_SETTINGS_UPDATED",
+      entityType: "settings",
+      entityId: "platform-settings",
+      entityName: "Platform Settings",
+      details: `Platform settings reset to defaults by ${currentAdmin?.name ?? "Super Admin"}.`,
+      metadata: { reset: true },
+      ipAddress: "127.0.0.1",
+      severity: "warning",
+    }));
     setPlatformForm(DEFAULT_PLATFORM_SETTINGS);
     setPlatformLoading(false);
     showToast("Platform settings reset to defaults.");

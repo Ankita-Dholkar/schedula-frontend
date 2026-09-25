@@ -368,9 +368,13 @@ export default function ReportsPage() {
       ];
     }
     if (category === "revenue") {
-      const totalRev = filteredPayments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
-      const pending = filteredPayments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
-      const refunded = filteredPayments.filter((p) => p.status === "refunded").reduce((s, p) => s + (p.refundAmount ?? p.amount), 0);
+      const getPaymentAmt = (p: Payment) => {
+        const appt = appointments.find((a) => a.id === p.appointmentId);
+        return appt?.consultationFee && appt.consultationFee > 0 ? appt.consultationFee : p.amount;
+      };
+      const totalRev = filteredPayments.filter((p) => p.status === "paid").reduce((s, p) => s + getPaymentAmt(p), 0);
+      const pending = filteredPayments.filter((p) => p.status === "pending").reduce((s, p) => s + getPaymentAmt(p), 0);
+      const refunded = filteredPayments.filter((p) => p.status === "refunded").reduce((s, p) => s + (p.refundAmount ?? getPaymentAmt(p)), 0);
       const failed = filteredPayments.filter((p) => p.status === "failed").length;
       return [
         { label: "Total Revenue", value: fmtCurrency(totalRev), color: "text-emerald-600" },
@@ -485,7 +489,11 @@ export default function ReportsPage() {
     },
     {
       key: "amount", header: "Amount",
-      render: (r) => <span className="text-sm font-semibold">{fmtCurrency(r.amount)}</span>,
+      render: (r) => {
+        const appt = appointments.find((a) => a.id === r.appointmentId);
+        const amt = appt?.consultationFee && appt.consultationFee > 0 ? appt.consultationFee : r.amount;
+        return <span className="text-sm font-semibold">{fmtCurrency(amt)}</span>;
+      },
     },
     {
       key: "method", header: "Method",
@@ -657,12 +665,13 @@ export default function ReportsPage() {
         ];
         const rows = filteredPayments.map((p) => {
           const appt = appointments.find((a) => a.id === p.appointmentId);
+          const amt = appt?.consultationFee && appt.consultationFee > 0 ? appt.consultationFee : p.amount;
           return {
             id: p.id,
             transactionId: p.transactionId ?? "—",
             patientName: appt?.patient.name ?? "—",
             doctorName: appt?.clinician ?? "—",
-            amount: p.amount,
+            amount: amt,
             method: p.method === "card" ? "Card" : "UPI",
             status: capitalize(p.status),
             createdAt: fmtDate(p.createdAt),

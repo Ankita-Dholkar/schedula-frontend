@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Stethoscope, Users, UserCheck, UserX, Search, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { refreshDoctors, setDoctorAccountStatus, setDoctorVerificationStatus } from "@/store/slices/doctorsSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import Badge from "@/components/ui/Badge";
 import type { BadgeVariant } from "@/components/ui/Badge";
 import Pagination from "@/components/ui/Pagination";
@@ -162,10 +164,59 @@ export default function AdminDoctorsPage() {
     setActionLoading(true);
     await new Promise((r) => setTimeout(r, 500));
     const { doctor, mode } = confirmDialog;
-    if (mode === "activate")   dispatch(setDoctorAccountStatus({ id: doctor.id, status: "active" }));
-    if (mode === "deactivate") dispatch(setDoctorAccountStatus({ id: doctor.id, status: "inactive" }));
-    if (mode === "approve")    dispatch(setDoctorVerificationStatus({ id: doctor.id, status: "approved" }));
-    if (mode === "reject")     dispatch(setDoctorVerificationStatus({ id: doctor.id, status: "rejected", rejectionReason: reason }));
+    if (mode === "activate") {
+      dispatch(setDoctorAccountStatus({ id: doctor.id, status: "active" }));
+      dispatch(logAdminAction({
+        actor: getAuditActor(currentAdmin),
+        action: "DOCTOR_STATUS_TOGGLED",
+        entityType: "doctor",
+        entityId: doctor.id,
+        entityName: doctor.name,
+        details: `Doctor account for ${doctor.name} activated by admin.`,
+        metadata: { previousStatus: "inactive", newStatus: "active" },
+        ipAddress: "127.0.0.1",
+        severity: "info",
+      }));
+    } else if (mode === "deactivate") {
+      dispatch(setDoctorAccountStatus({ id: doctor.id, status: "inactive" }));
+      dispatch(logAdminAction({
+        actor: getAuditActor(currentAdmin),
+        action: "DOCTOR_STATUS_TOGGLED",
+        entityType: "doctor",
+        entityId: doctor.id,
+        entityName: doctor.name,
+        details: `Doctor account for ${doctor.name} deactivated by admin.`,
+        metadata: { previousStatus: "active", newStatus: "inactive" },
+        ipAddress: "127.0.0.1",
+        severity: "warning",
+      }));
+    } else if (mode === "approve") {
+      dispatch(setDoctorVerificationStatus({ id: doctor.id, status: "approved" }));
+      dispatch(logAdminAction({
+        actor: getAuditActor(currentAdmin),
+        action: "DOCTOR_VERIFIED",
+        entityType: "doctor",
+        entityId: doctor.id,
+        entityName: doctor.name,
+        details: `Doctor verification approved for ${doctor.name} (${doctor.specialization}).`,
+        metadata: { previousStatus: "pending", newStatus: "approved" },
+        ipAddress: "127.0.0.1",
+        severity: "info",
+      }));
+    } else if (mode === "reject") {
+      dispatch(setDoctorVerificationStatus({ id: doctor.id, status: "rejected", rejectionReason: reason }));
+      dispatch(logAdminAction({
+        actor: getAuditActor(currentAdmin),
+        action: "DOCTOR_REJECTED",
+        entityType: "doctor",
+        entityId: doctor.id,
+        entityName: doctor.name,
+        details: `Doctor verification rejected for ${doctor.name}. Reason: ${reason ?? "No reason provided"}.`,
+        metadata: { previousStatus: "pending", newStatus: "rejected", rejectionReason: reason },
+        ipAddress: "127.0.0.1",
+        severity: "warning",
+      }));
+    }
     dispatch(refreshDoctors());
     setActionLoading(false);
     setConfirmDialog(null);

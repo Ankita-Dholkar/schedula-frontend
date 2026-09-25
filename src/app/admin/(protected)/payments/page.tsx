@@ -187,7 +187,11 @@ export default function AdminPaymentsPage() {
   // ── KPI Metrics ──────────────────────────────────────────────────────────
   const metrics = useMemo(() => {
     const paid = payments.filter((p) => p.status === "paid");
-    const totalRevenue = paid.reduce((sum, p) => sum + p.amount, 0);
+    const totalRevenue = paid.reduce((sum, p) => {
+      const apt = appointmentMap[p.appointmentId];
+      const amt = apt?.consultationFee && apt.consultationFee > 0 ? apt.consultationFee : p.amount;
+      return sum + amt;
+    }, 0);
     return {
       totalRevenue,
       total: payments.length,
@@ -196,7 +200,7 @@ export default function AdminPaymentsPage() {
       failed: payments.filter((p) => p.status === "failed").length,
       refunded: payments.filter((p) => p.status === "refunded").length,
     };
-  }, [payments]);
+  }, [payments, appointmentMap]);
 
   // ── Filtered List ─────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -554,7 +558,7 @@ export default function AdminPaymentsPage() {
                         {/* Amount */}
                         <td className="px-4 py-3.5">
                           <span className="font-bold text-[var(--ink)]">
-                            ₹{payment.amount.toLocaleString()}
+                            ₹{(apt?.consultationFee && apt.consultationFee > 0 ? apt.consultationFee : payment.amount).toLocaleString()}
                           </span>
                         </td>
 

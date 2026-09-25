@@ -18,6 +18,7 @@ import type { Review } from "@/types/review";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleHideReview } from "@/store/slices/reviewsSlice";
 import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import { hasPermission } from "@/lib/admin/permissions";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -181,7 +182,7 @@ export default function ReviewDetailModal({ review, open, onClose }: Props) {
     const willBeHidden = !review.isHidden;
     dispatch(toggleHideReview({ reviewId: review.id }));
     dispatch(logAdminAction({
-      actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+      actor: getAuditActor(currentAdmin),
       action: willBeHidden ? "REVIEW_HIDDEN" : "REVIEW_RESTORED",
       entityType: "review",
       entityId: review.id,

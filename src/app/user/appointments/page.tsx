@@ -395,7 +395,7 @@ function UserAppointmentsPage() {
                   <div className="flex items-center gap-2 text-sm">
                     <CreditCard size={14} className="shrink-0 text-[var(--muted)]" />
                     <span className="font-medium text-[var(--ink)]">
-                      ₹{apt.consultationFee ?? CONSULTATION_FEE}
+                      ₹{apt.consultationFee ?? ((apt.type && apt.type.toLowerCase().includes("check")) ? 800 : 300)}
                     </span>
                   </div>
                   {apt.paymentStatus === "paid" ? (
@@ -489,6 +489,8 @@ function UserAppointmentsPage() {
       {paymentAppointment && (
         <DemoPaymentModal
           appointmentId={paymentAppointment.id}
+          amount={paymentAppointment.consultationFee ?? ((paymentAppointment.type && paymentAppointment.type.toLowerCase().includes("check")) ? 800 : 300)}
+          feeLabel={`${paymentAppointment.type ?? "Consultation"} Fee`}
           onClose={() => setPaymentAppointment(null)}
           onSuccess={() => {
             setPaymentAppointment(null);

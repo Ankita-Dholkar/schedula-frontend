@@ -30,7 +30,7 @@ import { ACTION_CATEGORY_MAP } from "@/types/auditLog";
 // ── Types & Constants ─────────────────────────────────────────────────────────
 
 type DateRange = "all" | "today" | "7d" | "30d" | "custom";
-type ActorRole = "all" | "admin" | "doctor" | "patient";
+type ActorRole = "all" | "admin" | "super_admin" | "admin_role" | "support" | "doctor" | "patient";
 
 const CATEGORY_OPTIONS: { value: AuditActionCategory; label: string }[] = [
   { value: "all",                label: "All Actions" },
@@ -40,6 +40,8 @@ const CATEGORY_OPTIONS: { value: AuditActionCategory; label: string }[] = [
   { value: "payments",           label: "Payments" },
   { value: "reviews",            label: "Reviews" },
   { value: "notifications",      label: "Notifications" },
+  { value: "admin_management",   label: "Admin Management" },
+  { value: "settings",           label: "Platform Settings" },
   { value: "auth",               label: "Auth" },
 ];
 
@@ -52,10 +54,13 @@ const DATE_OPTIONS: { value: DateRange; label: string }[] = [
 ];
 
 const ACTOR_ROLE_OPTIONS: { value: ActorRole; label: string }[] = [
-  { value: "all",     label: "All Actors" },
-  { value: "admin",   label: "Admins" },
-  { value: "doctor",  label: "Doctors" },
-  { value: "patient", label: "Patients" },
+  { value: "all",         label: "All Actors" },
+  { value: "admin",       label: "All Admins" },
+  { value: "super_admin", label: "Super Admin" },
+  { value: "admin_role",  label: "Operations Admin" },
+  { value: "support",     label: "Support Staff" },
+  { value: "doctor",      label: "Doctors" },
+  { value: "patient",     label: "Patients" },
 ];
 
 const PAGE_SIZE = 15;
@@ -103,6 +108,8 @@ function actionBadgeColor(category: AuditActionCategory): string {
     payments:           "bg-emerald-50 text-emerald-700",
     reviews:            "bg-amber-50 text-amber-700",
     notifications:      "bg-indigo-50 text-indigo-700",
+    admin_management:   "bg-purple-50 text-purple-700",
+    settings:           "bg-rose-50 text-rose-700",
     auth:               "bg-slate-100 text-slate-600",
   };
   return map[category] ?? "bg-gray-100 text-gray-600";
@@ -197,13 +204,26 @@ export default function AuditLogsPage() {
       // Category
       if (category !== "all" && ACTION_CATEGORY_MAP[log.action] !== category) return false;
       // Actor role
-      if (actorRole !== "all" && log.actor.role !== actorRole) return false;
+      if (actorRole !== "all") {
+        if (actorRole === "admin") {
+          if (log.actor.role !== "admin") return false;
+        } else if (actorRole === "super_admin") {
+          if (log.actor.adminRole !== "super_admin") return false;
+        } else if (actorRole === "admin_role") {
+          if (log.actor.adminRole !== "admin") return false;
+        } else if (actorRole === "support") {
+          if (log.actor.adminRole !== "support") return false;
+        } else {
+          if (log.actor.role !== actorRole) return false;
+        }
+      }
       // Search
       if (search) {
         const q = search.toLowerCase();
         if (
           !log.actor.name.toLowerCase().includes(q) &&
           !log.actor.email.toLowerCase().includes(q) &&
+          !(log.actor.adminRole && log.actor.adminRole.toLowerCase().includes(q)) &&
           !log.actionLabel.toLowerCase().includes(q) &&
           !log.entityName.toLowerCase().includes(q) &&
           !log.details.toLowerCase().includes(q)
@@ -236,6 +256,7 @@ export default function AuditLogsPage() {
       const cols: ExportColumn[] = [
         { header: "Timestamp",   key: "timestamp" },
         { header: "Actor",       key: "actorName" },
+        { header: "Actor Email", key: "actorEmail" },
         { header: "Actor Role",  key: "actorRole" },
         { header: "Action",      key: "actionLabel" },
         { header: "Entity Type", key: "entityType" },
@@ -248,7 +269,16 @@ export default function AuditLogsPage() {
       const rows = filteredLogs.map((l) => ({
         timestamp:   fmtDateTime(l.timestamp),
         actorName:   l.actor.name,
-        actorRole:   l.actor.role.charAt(0).toUpperCase() + l.actor.role.slice(1),
+        actorEmail:  l.actor.email,
+        actorRole:   l.actor.role === "admin"
+          ? (l.actor.adminRole === "super_admin"
+              ? "Super Admin"
+              : l.actor.adminRole === "admin"
+              ? "Operations Admin"
+              : l.actor.adminRole === "support"
+              ? "Support Staff"
+              : "Admin")
+          : l.actor.role.charAt(0).toUpperCase() + l.actor.role.slice(1),
         actionLabel: l.actionLabel,
         entityType:  l.entityType.charAt(0).toUpperCase() + l.entityType.slice(1),
         entityName:  l.entityName,
@@ -455,9 +485,33 @@ export default function AuditLogsPage() {
                       </td>
 
                       {/* Actor */}
-                      <td className="px-4 py-3 min-w-[140px]">
-                        <p className="text-sm font-semibold text-[var(--ink)]">{log.actor.name}</p>
-                        <p className="text-xs text-[var(--muted)] capitalize">{log.actor.role}</p>
+                      <td className="px-4 py-3 min-w-[150px]">
+                        <p className="text-sm font-semibold text-[var(--ink)] leading-snug">{log.actor.name}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {log.actor.role === "admin" ? (
+                            <span
+                              className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                                log.actor.adminRole === "super_admin"
+                                  ? "bg-purple-100 text-purple-700 border border-purple-200"
+                                  : log.actor.adminRole === "admin"
+                                  ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                  : log.actor.adminRole === "support"
+                                  ? "bg-slate-100 text-slate-700 border border-slate-200"
+                                  : "bg-violet-100 text-violet-700 border border-violet-200"
+                              }`}
+                            >
+                              {log.actor.adminRole === "super_admin"
+                                ? "Super Admin"
+                                : log.actor.adminRole === "admin"
+                                ? "Operations Admin"
+                                : log.actor.adminRole === "support"
+                                ? "Support Staff"
+                                : "Admin"}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-[var(--muted)] capitalize">{log.actor.role}</span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Action */}

@@ -10,6 +10,7 @@ import ConfirmationDialog from "./ConfirmationDialog";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setDoctorVerificationStatus, setDoctorAccountStatus, refreshDoctors } from "@/store/slices/doctorsSlice";
 import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import { hasPermission } from "@/lib/admin/permissions";
 
 type Props = {
@@ -70,7 +71,7 @@ export default function DoctorDetailDrawer({ doctor, open, onClose }: Props) {
     if (dialog === "approve") {
       dispatch(setDoctorVerificationStatus({ id: doctor.id, status: "approved" }));
       dispatch(logAdminAction({
-        actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+        actor: getAuditActor(currentAdmin),
         action: "DOCTOR_VERIFIED",
         entityType: "doctor",
         entityId: doctor.id,
@@ -83,7 +84,7 @@ export default function DoctorDetailDrawer({ doctor, open, onClose }: Props) {
     } else if (dialog === "reject") {
       dispatch(setDoctorVerificationStatus({ id: doctor.id, status: "rejected", rejectionReason: reason }));
       dispatch(logAdminAction({
-        actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+        actor: getAuditActor(currentAdmin),
         action: "DOCTOR_REJECTED",
         entityType: "doctor",
         entityId: doctor.id,
@@ -96,7 +97,7 @@ export default function DoctorDetailDrawer({ doctor, open, onClose }: Props) {
     } else if (dialog === "activate") {
       dispatch(setDoctorAccountStatus({ id: doctor.id, status: "active" }));
       dispatch(logAdminAction({
-        actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+        actor: getAuditActor(currentAdmin),
         action: "DOCTOR_STATUS_TOGGLED",
         entityType: "doctor",
         entityId: doctor.id,
@@ -109,7 +110,7 @@ export default function DoctorDetailDrawer({ doctor, open, onClose }: Props) {
     } else if (dialog === "deactivate") {
       dispatch(setDoctorAccountStatus({ id: doctor.id, status: "inactive" }));
       dispatch(logAdminAction({
-        actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+        actor: getAuditActor(currentAdmin),
         action: "DOCTOR_STATUS_TOGGLED",
         entityType: "doctor",
         entityId: doctor.id,

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Menu, LogOut, ChevronDown, ShieldCheck, User, Settings } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearAdminUser } from "@/store/slices/adminAuthSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import { ROLE_META } from "@/types/admin";
 import Link from "next/link";
 
@@ -38,6 +40,19 @@ export default function AdminHeader({ onMenuToggle }: Props) {
   }, []);
 
   const handleLogout = () => {
+    if (currentAdmin) {
+      dispatch(logAdminAction({
+        actor: getAuditActor(currentAdmin),
+        action: "ADMIN_LOGOUT",
+        entityType: "auth",
+        entityId: currentAdmin.id,
+        entityName: currentAdmin.name,
+        details: `Admin ${currentAdmin.name} logged out.`,
+        metadata: { email: currentAdmin.email },
+        ipAddress: "127.0.0.1",
+        severity: "info",
+      }));
+    }
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
     dispatch(clearAdminUser());
     setDropdownOpen(false);
