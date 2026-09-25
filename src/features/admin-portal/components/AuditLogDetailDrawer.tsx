@@ -46,9 +46,11 @@ function categoryLabel(log: AuditLog): string {
     payments: "Payments",
     reviews: "Reviews",
     notifications: "Notifications",
+    admin_management: "Admin Management",
+    settings: "Platform Settings",
     auth: "Authentication",
   };
-  return labels[cat];
+  return labels[cat] ?? cat;
 }
 
 function entityTypeLabel(type: AuditLog["entityType"]): string {
@@ -61,14 +63,29 @@ function entityTypeLabel(type: AuditLog["entityType"]): string {
     notification: "Notification",
     system: "System",
     auth: "Auth",
+    settings: "Platform Settings",
+    admin_user: "Admin User",
   };
   return map[type] ?? type;
 }
 
-function roleColor(role: AuditLog["actor"]["role"]): string {
-  if (role === "admin") return "bg-violet-100 text-violet-700";
-  if (role === "doctor") return "bg-sky-100 text-sky-700";
-  return "bg-emerald-100 text-emerald-700";
+function getActorRoleBadge(actor: AuditLog["actor"]): { label: string; cls: string } {
+  if (actor.role === "admin") {
+    if (actor.adminRole === "super_admin") {
+      return { label: "Super Admin", cls: "bg-purple-100 text-purple-700 border border-purple-200" };
+    }
+    if (actor.adminRole === "admin") {
+      return { label: "Operations Admin", cls: "bg-blue-100 text-blue-700 border border-blue-200" };
+    }
+    if (actor.adminRole === "support") {
+      return { label: "Support Staff", cls: "bg-slate-100 text-slate-700 border border-slate-200" };
+    }
+    return { label: "Administrator", cls: "bg-violet-100 text-violet-700 border border-violet-200" };
+  }
+  if (actor.role === "doctor") {
+    return { label: "Doctor", cls: "bg-sky-100 text-sky-700 border border-sky-200" };
+  }
+  return { label: "Patient", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200" };
 }
 
 // ── Row Component ─────────────────────────────────────────────────────────────
@@ -177,20 +194,21 @@ export default function AuditLogDetailDrawer({ log, onClose }: Props) {
             <div className="flex-1 overflow-y-auto px-5 py-4">
 
               {/* Actor */}
-              <div className="mb-4 rounded-xl border border-[var(--line)] p-3.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-2 flex items-center gap-1.5">
-                  <User size={11} /> Actor
+              <div className="mb-4 rounded-xl border border-[var(--line)] p-3.5 bg-[var(--canvas)]/50">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-2.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5"><User size={11} /> Performed By</span>
+                  <span className="font-mono text-[10px] text-[var(--muted)]">ID: {log.actor.id}</span>
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand)] text-white text-xs font-bold">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white text-xs font-bold">
                     {log.actor.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-[var(--ink)] truncate">{log.actor.name}</p>
                     <p className="text-xs text-[var(--muted)] truncate">{log.actor.email}</p>
                   </div>
-                  <span className={`ml-auto text-[10px] font-semibold rounded-full px-2 py-0.5 ${roleColor(log.actor.role)}`}>
-                    {log.actor.role.charAt(0).toUpperCase() + log.actor.role.slice(1)}
+                  <span className={`shrink-0 text-[10px] font-semibold rounded-full px-2.5 py-0.5 ${getActorRoleBadge(log.actor).cls}`}>
+                    {getActorRoleBadge(log.actor).label}
                   </span>
                 </div>
               </div>

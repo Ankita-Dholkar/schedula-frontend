@@ -20,6 +20,8 @@ type Props = {
   appointmentId: string;
   patientId?: string;
   doctorId?: string;
+  amount?: number;
+  feeLabel?: string;
   onClose: () => void;
   /** Called with the transactionId and selected method after a successful demo payment. */
   onSuccess?: (transactionId: string, method: PaymentMethod) => void;
@@ -56,9 +58,13 @@ export default function DemoPaymentModal({
   appointmentId,
   patientId,
   doctorId,
+  amount,
+  feeLabel,
   onClose,
   onSuccess,
 }: Props) {
+  const displayAmount = amount ?? CONSULTATION_FEE;
+  const displayLabel = feeLabel ?? "Consultation Fee";
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("card");
   const [simulate, setSimulate] = useState<SimulateOutcome>("success");
@@ -125,10 +131,10 @@ export default function DemoPaymentModal({
                 {/* Amount */}
                 <div className="mb-6 rounded-xl bg-[var(--canvas)] p-4 text-center">
                   <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                    Consultation Fee
+                    {displayLabel}
                   </p>
                   <p className="mt-1 text-4xl font-extrabold tracking-tight text-[var(--ink)]">
-                    ₹{CONSULTATION_FEE}
+                    ₹{displayAmount}
                   </p>
                 </div>
 
@@ -220,7 +226,7 @@ export default function DemoPaymentModal({
                   onClick={handlePay}
                   className="w-full rounded-xl bg-[var(--brand)] py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--brand-deep)] active:scale-[0.98]"
                 >
-                  Pay ₹{CONSULTATION_FEE}
+                  Pay ₹{displayAmount}
                 </button>
               </>
             )}
@@ -252,7 +258,7 @@ export default function DemoPaymentModal({
                 <div className="mt-5 w-full space-y-2.5 rounded-xl border border-[var(--line)] bg-[var(--canvas)] p-4 text-left text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-[var(--muted)]">Amount Paid</span>
-                    <span className="font-bold text-[var(--ink)]">₹{CONSULTATION_FEE}</span>
+                    <span className="font-bold text-[var(--ink)]">₹{displayAmount}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[var(--muted)]">Payment Status</span>

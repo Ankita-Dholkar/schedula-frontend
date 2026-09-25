@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
+import { selectAverageRating, selectDoctorReviews } from "@/store/slices/reviewsSlice";
+import { getAllDoctors } from "@/lib/mock-data/doctors";
+import ReviewsDrawer from "@/features/doctors/components/ReviewsDrawer";
 
 /* ── FAQ data ── */
 const faqs = [
@@ -64,13 +67,8 @@ const steps = [
   { num: "03", title: "Confirm your visit", desc: "Pick your preferred time and confirm. It's that simple." },
 ];
 
-/* ── Expert doctors data ── */
-const experts = [
-  { name: "Dr. Prakash Das", spec: "Sr. Psychologist", exp: "7 years", img: "/doctor-1.png" },
-  { name: "Dr. Anika Rao", spec: "General Physician", exp: "10 years", img: "/doctor-2.png" },
-  { name: "Dr. Martin Cole", spec: "Dermatologist", exp: "12 years", img: "/doctor-3.png" },
-  { name: "Dr. Sarah Wilson", spec: "Cardiologist", exp: "9 years", img: "/doctor-4.png" },
-];
+/* ── Expert doctor IDs (linked to real doctor catalog entries) ── */
+const EXPERT_IDS = ["doc-1", "doc-2", "doc-3", "doc-4"];
 
 /* ── Testimonials ── */
 const testimonials = [
@@ -103,6 +101,135 @@ const testimonials = [
     rating: 5,
   },
 ];
+
+/* ── ExpertCard: single doctor card with live rating + reviews drawer ── */
+function ExpertCard({
+  doctorId,
+  patientHref,
+}: {
+  doctorId: string;
+  patientHref: (fallback: string) => string;
+}) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const avgRating = useAppSelector((state) => selectAverageRating(state, doctorId));
+  const reviews = useAppSelector((state) => selectDoctorReviews(state, doctorId));
+  const reviewCount = reviews.length;
+
+  // Resolve doctor info from mock data (safe to call on client)
+  const [doctor, setDoctor] = useState<ReturnType<typeof getAllDoctors>[number] | null>(null);
+  useEffect(() => {
+    const loadDoctor = () => {
+      const found = getAllDoctors().find((d) => d.id === doctorId) ?? null;
+      setDoctor(found);
+    };
+    loadDoctor();
+    window.addEventListener("storage", loadDoctor);
+    window.addEventListener("schedula_doctor_updated", loadDoctor);
+    return () => {
+      window.removeEventListener("storage", loadDoctor);
+      window.removeEventListener("schedula_doctor_updated", loadDoctor);
+    };
+  }, [doctorId]);
+
+  if (!doctor) return null;
+
+  return (
+    <>
+      <div className="group overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--canvas)] transition hover:-translate-y-1 hover:shadow-xl">
+        <div className="relative h-52 w-full overflow-hidden bg-stone-100">
+          {doctor.image ? (
+            <Image
+              src={doctor.image}
+              alt={doctor.name}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="object-cover object-top transition duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-teal-50 text-4xl font-bold text-[var(--brand)] opacity-50">
+              {doctor.name.charAt(0)}
+            </div>
+          )}
+        </div>
+        <div className="p-4">
+          <p className="font-semibold text-[var(--ink)]">{doctor.name}</p>
+          <p className="mt-0.5 text-sm text-[var(--brand)]">{doctor.specialization}</p>
+          <p className="mt-0.5 text-xs text-[var(--muted)]">{doctor.experience} years of experience</p>
+
+          {/* Star rating row — clickable to open reviews drawer */}
+          {reviewCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              title="View patient reviews"
+              className="mt-1.5 flex items-center gap-1 rounded px-0.5 -ml-0.5 transition hover:bg-amber-50"
+            >
+              {[1, 2, 3, 4, 5].map((s) => (
+                <span key={s} className={`text-[12px] ${avgRating >= s ? "text-amber-400" : "text-gray-200"}`}>★</span>
+              ))}
+              <span className="text-[11px] font-semibold text-[#4B5563]">{avgRating.toFixed(1)}</span>
+              <span className="text-[11px] text-[var(--muted)]">({reviewCount})</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              title="View patient reviews (no reviews yet)"
+              className="mt-1.5 flex items-center gap-1 rounded px-0.5 -ml-0.5 transition hover:bg-gray-50"
+            >
+              {[1, 2, 3, 4, 5].map((s) => (
+                <span key={s} className="text-[12px] text-gray-200">★</span>
+              ))}
+              <span className="text-[11px] text-[var(--muted)]">No reviews yet</span>
+            </button>
+          )}
+
+          <Link
+            href={patientHref("/user/doctors")}
+            className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--brand)] hover:underline"
+          >
+            Book now <ChevronRight size={14} />
+          </Link>
+        </div>
+      </div>
+
+      <ReviewsDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        doctorName={doctor.name}
+        avgRating={avgRating}
+        reviews={reviews}
+      />
+    </>
+  );
+}
+
+/* ── ExpertsSection: the "Our Experts" landing page section ── */
+function ExpertsSection({ patientHref }: { patientHref: (fallback: string) => string }) {
+  return (
+    <section className="bg-white py-20">
+      <div className="mx-auto max-w-7xl px-5 lg:px-10">
+        <div className="mb-12 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--brand)]">Specialists</p>
+            <h2 className="mt-2 text-3xl font-bold text-[var(--ink)] sm:text-4xl">Our Experts</h2>
+          </div>
+          <Link
+            href={patientHref("/user/doctors")}
+            className="flex items-center gap-1.5 text-sm font-semibold text-[var(--brand)] transition hover:underline"
+          >
+            View all doctors <ChevronRight size={16} />
+          </Link>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {EXPERT_IDS.map((id) => (
+            <ExpertCard key={id} doctorId={id} patientHref={patientHref} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function HomePage() {
   const dispatch = useAppDispatch();
@@ -445,45 +572,7 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════ OUR EXPERTS ══════════════════ */}
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-7xl px-5 lg:px-10">
-          <div className="mb-12 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-widest text-[var(--brand)]">Specialists</p>
-              <h2 className="mt-2 text-3xl font-bold text-[var(--ink)] sm:text-4xl">Our Experts</h2>
-            </div>
-            <Link
-              href={patientHref("/user/doctors")}
-              className="flex items-center gap-1.5 text-sm font-semibold text-[var(--brand)] transition hover:underline"
-            >
-              View all doctors <ChevronRight size={16} />
-            </Link>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {experts.map(({ name, spec, exp, img }) => (
-              <div
-                key={name}
-                className="group overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--canvas)] transition hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div className="relative h-52 w-full overflow-hidden bg-stone-100">
-                  <Image src={img} alt={name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover object-top transition duration-500 group-hover:scale-105" />
-                </div>
-                <div className="p-4">
-                  <p className="font-semibold text-[var(--ink)]">{name}</p>
-                  <p className="mt-0.5 text-sm text-[var(--brand)]">{spec}</p>
-                  <p className="mt-1 text-xs text-[var(--muted)]">{exp} of experience</p>
-                  <Link
-                    href={patientHref("/user/doctors")}
-                    className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--brand)] hover:underline"
-                  >
-                    Book now <ChevronRight size={14} />
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <ExpertsSection patientHref={patientHref} />
 
       {/* ══════════════════ TESTIMONIAL ══════════════════ */}
       <section className="py-20">

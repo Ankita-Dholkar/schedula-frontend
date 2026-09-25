@@ -1,6 +1,7 @@
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
 import { getAllPrescriptions } from "./prescriptions";
 import { getAllPayments } from "./payments";
+import { doctors } from "./doctors";
 
 export const appointments: Appointment[] = [
   // ── Past appointments ────────────────────────────────────────────
@@ -37,7 +38,7 @@ export const appointments: Appointment[] = [
     location: { name: "City Center Clinic", address: "45 MG Road, Shivajinagar, Pune" },
     type: "Check-up",
     appointmentMode: "in-person",
-    consultationFee: 500,
+    consultationFee: 750,
     paymentStatus: "failed",
   },
   {
@@ -166,7 +167,7 @@ export const appointments: Appointment[] = [
     location: { name: "City Center Clinic", address: "45 MG Road, Shivajinagar, Pune" },
     type: "Check-up",
     appointmentMode: "in-person",
-    consultationFee: 500,
+    consultationFee: 750,
     paymentStatus: "paid",
     transactionId: "DEMO-10500000",
     paymentMethod: "card",
@@ -272,7 +273,7 @@ export const appointments: Appointment[] = [
     reason: "Hypertension management",
     type: "Check-up",
     appointmentMode: "online",
-    consultationFee: 500,
+    consultationFee: 1200,
     paymentStatus: "pending",
   },
   {
@@ -315,6 +316,12 @@ export function getAllAppointments(): Appointment[] {
     if (rawStarted) consultationStartedMap = JSON.parse(rawStarted);
   } catch { /* ignore */ }
 
+  let doctorProfilesMap: Record<string, Record<string, unknown>> = {};
+  try {
+    const raw = localStorage.getItem("doctorProfiles");
+    if (raw) doctorProfilesMap = JSON.parse(raw);
+  } catch { /* ignore */ }
+
   const allPrescriptions = getAllPrescriptions();
   const allPayments = getAllPayments();
   const paymentMap = new Map(allPayments.map((p) => [p.appointmentId, p]));
@@ -347,18 +354,99 @@ export function getAllAppointments(): Appointment[] {
       result = { ...result, prescriptionAvailable: true, prescriptionUrl: "#" };
     }
 
-    // Derive payment fields from the payment record (single source of truth).
-    // When a payment record exists, its fields take precedence.
-    // Existing mock appointments retain their seeded UI values for backward compatibility.
+    // Resolve clinician's configured consultation & checkup fees
+    let docCustomConsultationFee: number | undefined;
+    let docCustomCheckupFee: number | undefined;
+    if (apt.clinician) {
+      // 1. From doctorProfiles (saved edits)
+      const p = Object.entries(doctorProfilesMap).find(
+        ([k]) =>
+          k.toLowerCase() === apt.clinician.toLowerCase() ||
+          k.toLowerCase().replace(/^dr\.\s*/i, "") === apt.clinician.toLowerCase().replace(/^dr\.\s*/i, "")
+      )?.[1];
+      if (p?.consultationFee !== undefined && p?.consultationFee !== "") {
+        docCustomConsultationFee = Number(p.consultationFee);
+      }
+      if (p?.checkupFee !== undefined && p?.checkupFee !== "") {
+        docCustomCheckupFee = Number(p.checkupFee);
+      }
+
+      // 2. From loggedInUser if current doctor is logged in
+      try {
+        const rawUser = localStorage.getItem("loggedInUser");
+        if (rawUser) {
+          const u = JSON.parse(rawUser);
+          if (
+            u.role === "doctor" &&
+            (u.name?.toLowerCase() === apt.clinician.toLowerCase() ||
+             u.name?.toLowerCase().replace(/^dr\.\s*/i, "") === apt.clinician.toLowerCase().replace(/^dr\.\s*/i, ""))
+          ) {
+            if (docCustomConsultationFee === undefined && u.consultationFee !== undefined && u.consultationFee !== "") {
+              docCustomConsultationFee = Number(u.consultationFee);
+            }
+            if (docCustomCheckupFee === undefined && u.checkupFee !== undefined && u.checkupFee !== "") {
+              docCustomCheckupFee = Number(u.checkupFee);
+            }
+          }
+        }
+      } catch { /* ignore */ }
+
+      // 3. Fallback to mock doctor data
+      const doc = doctors.find(
+        (d) =>
+          d.name.toLowerCase() === apt.clinician.toLowerCase() ||
+          d.name.toLowerCase().replace(/^dr\.\s*/i, "") === apt.clinician.toLowerCase().replace(/^dr\.\s*/i, "")
+      );
+      if (doc) {
+        if (docCustomConsultationFee === undefined && doc.consultationFee !== undefined) {
+          docCustomConsultationFee = Number(doc.consultationFee);
+        }
+        if (docCustomCheckupFee === undefined && doc.checkupFee !== undefined) {
+          docCustomCheckupFee = Number(doc.checkupFee);
+        }
+      }
+    }
+
+    // Determine final fee:
+    const isCheckup = Boolean(
+      (result.type && result.type.toLowerCase().includes("check")) ||
+      (result.reason && result.reason.toLowerCase().includes("check"))
+    );
+
     const payment = paymentMap.get(apt.id);
+    let resolvedFee = result.consultationFee;
+    if (payment && payment.amount) {
+      resolvedFee = payment.amount;
+    }
+
+    if (isCheckup) {
+      // For check-up appointments: use doctor's checkup fee if default 500, undefined, or mistakenly set to consultation fee
+      const docCheckup = docCustomCheckupFee ?? 800;
+      if (
+        !resolvedFee ||
+        resolvedFee === 500 ||
+        (docCustomConsultationFee !== undefined && resolvedFee === docCustomConsultationFee)
+      ) {
+        resolvedFee = docCheckup;
+      }
+    } else {
+      // For consultation appointments:
+      const docConsultation = docCustomConsultationFee ?? 500;
+      if (!resolvedFee || resolvedFee === 500) {
+        resolvedFee = docConsultation;
+      }
+    }
+
+    // Derive payment fields from the payment record (single source of truth).
     return {
       ...result,
+      consultationFee: resolvedFee,
       ...(payment
         ? {
             paymentStatus: payment.status,
             transactionId: payment.transactionId,
             paymentMethod: payment.method,
-            consultationFee: payment.amount,
+            consultationFee: resolvedFee,
           }
         : {}),
     };

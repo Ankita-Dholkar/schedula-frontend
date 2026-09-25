@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { hydrateReviews, toggleHideReview, selectAllReviewsForAdmin } from "@/store/slices/reviewsSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import type { Review } from "@/types/review";
 import Pagination from "@/components/ui/Pagination";
 import { LoadingState, EmptyState } from "@/components/ui/StateViews";
@@ -260,7 +262,21 @@ export default function AdminReviewsPage() {
     e.stopPropagation();
     setQuickActionLoading(review.id);
     await new Promise((r) => setTimeout(r, 400));
+    const willBeHidden = !review.isHidden;
     dispatch(toggleHideReview({ reviewId: review.id }));
+    dispatch(logAdminAction({
+      actor: getAuditActor(currentAdmin),
+      action: willBeHidden ? "REVIEW_HIDDEN" : "REVIEW_RESTORED",
+      entityType: "review",
+      entityId: review.id,
+      entityName: `Review by ${review.patientName} on ${review.doctorName ?? "Doctor"}`,
+      details: willBeHidden
+        ? `Review by ${review.patientName} hidden by admin after moderation.`
+        : `Hidden review by ${review.patientName} restored by admin.`,
+      metadata: { reviewRating: review.rating, isReported: review.isReported ?? false },
+      ipAddress: "127.0.0.1",
+      severity: willBeHidden ? "warning" : "info",
+    }));
     setQuickActionLoading(null);
   };
 

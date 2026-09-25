@@ -32,6 +32,8 @@ type PersistedProfile = {
   gender?: string;
   address?: string;
   city?: string;
+  consultationFee?: string | number;
+  checkupFee?: string | number;
 };
 
 // Shape stored in localStorage.registeredUsers for doctors
@@ -50,6 +52,8 @@ type RegisteredDoctor = {
   gender?: string;
   address?: string;
   city?: string;
+  consultationFee?: number;
+  checkupFee?: number;
 };
 
 export default function DoctorProfilePage() {
@@ -68,6 +72,8 @@ export default function DoctorProfilePage() {
     gender: "",
     address: "",
     city: "",
+    consultationFee: "500",
+    checkupFee: "800",
   });
   const [availability, setAvailability] = useState<DoctorAvailability | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -106,28 +112,76 @@ export default function DoctorProfilePage() {
       } catch { /* ignore */ }
 
       // --- Priority 3: static mock doctor auth record ---
-      const mockDoctor = mockDoctors.find((d) => d.id === id);
-
-      // --- Priority 4: static doctor profile (description etc.) ---
-      const doctorProfile = profileDoctors.find(
-        (d) => d.id === id || d.name === mockDoctor?.name || d.name === user.name
+      const mockDoctor = mockDoctors.find(
+        (d) =>
+          d.id === id ||
+          (user.email && d.email === user.email) ||
+          (user.name && d.name.toLowerCase() === user.name.toLowerCase())
       );
 
-      // Merge in order: persisted > registered > mock
+      // --- Priority 4: static doctor profile (description, qualification, clinic etc.) ---
+      const doctorProfile = profileDoctors.find(
+        (d) =>
+          d.id === id ||
+          (mockDoctor?.id && d.id === mockDoctor.id) ||
+          (user.email && d.email === user.email) ||
+          (user.name && d.name.toLowerCase() === user.name.toLowerCase()) ||
+          (mockDoctor?.name && d.name.toLowerCase() === mockDoctor.name.toLowerCase())
+      );
+
+      // If persisted was keyed under doctorProfile.id or doctor name, check that too
+      if (Object.keys(persisted).length === 0) {
+        try {
+          const profilesRaw = localStorage.getItem("doctorProfiles");
+          if (profilesRaw) {
+            const profiles = JSON.parse(profilesRaw);
+            if (doctorProfile?.id && profiles[doctorProfile.id]) {
+              persisted = profiles[doctorProfile.id];
+            } else if (user.name && profiles[user.name]) {
+              persisted = profiles[user.name];
+            }
+          }
+        } catch { /* ignore */ }
+      }
+
+      // Merge in order: persisted > registered > mock > doctorProfile
       setProfileData({
-        name:           persisted.name           ?? registered?.name          ?? mockDoctor?.name          ?? user.name,
-        email:          persisted.email          ?? registered?.email         ?? mockDoctor?.email         ?? user.email,
-        mobile:         persisted.mobile         ?? registered?.mobile        ?? mockDoctor?.mobile        ?? "",
-        specialization: persisted.specialization ?? registered?.specialization ?? mockDoctor?.specialization ?? doctorProfile?.specialization ?? "",
-        experience:     String(persisted.experience ?? registered?.experience  ?? mockDoctor?.experience  ?? doctorProfile?.experience ?? ""),
-        licenseNumber:  persisted.licenseNumber  ?? registered?.licenseNumber ?? mockDoctor?.licenseNumber ?? "",
-        description:    persisted.description    ?? doctorProfile?.description ?? "",
-        qualification:  persisted.qualification  ?? registered?.qualification ?? "",
-        hospitalName:   persisted.hospitalName   ?? registered?.hospitalName  ?? "",
-        dob:            persisted.dob            ?? registered?.dob           ?? "",
-        gender:         persisted.gender         ?? registered?.gender        ?? "",
-        address:        persisted.address        ?? registered?.address       ?? "",
-        city:           persisted.city           ?? registered?.city          ?? "",
+        name:           persisted.name           || registered?.name          || mockDoctor?.name          || user.name || doctorProfile?.name || "",
+        email:          persisted.email          || registered?.email         || mockDoctor?.email         || user.email || doctorProfile?.email || "",
+        mobile:         persisted.mobile         || registered?.mobile        || mockDoctor?.mobile        || doctorProfile?.mobile || "",
+        specialization: persisted.specialization || registered?.specialization || mockDoctor?.specialization || doctorProfile?.specialization || "",
+        experience:
+          persisted.experience !== undefined && persisted.experience !== ""
+            ? String(persisted.experience)
+            : registered?.experience !== undefined
+            ? String(registered.experience)
+            : mockDoctor?.experience !== undefined
+            ? String(mockDoctor.experience)
+            : String(doctorProfile?.experience ?? ""),
+        licenseNumber:  persisted.licenseNumber  || registered?.licenseNumber || mockDoctor?.licenseNumber || doctorProfile?.licenseNumber || "",
+        description:    persisted.description    || doctorProfile?.description || "",
+        qualification:  persisted.qualification  || registered?.qualification || doctorProfile?.qualification || "",
+        hospitalName:   persisted.hospitalName   || registered?.hospitalName  || doctorProfile?.hospitalName || doctorProfile?.clinic?.name || "",
+        dob:            persisted.dob            || registered?.dob           || doctorProfile?.dob || "",
+        gender:         persisted.gender         || registered?.gender        || doctorProfile?.gender || "",
+        address:        persisted.address        || registered?.address       || doctorProfile?.address || doctorProfile?.clinic?.address || "",
+        city:           persisted.city           || registered?.city          || doctorProfile?.city || "",
+        consultationFee:
+          persisted.consultationFee !== undefined && persisted.consultationFee !== ""
+            ? String(persisted.consultationFee)
+            : registered?.consultationFee !== undefined
+            ? String(registered.consultationFee)
+            : mockDoctor?.consultationFee !== undefined
+            ? String(mockDoctor.consultationFee)
+            : String(doctorProfile?.consultationFee ?? "500"),
+        checkupFee:
+          persisted.checkupFee !== undefined && persisted.checkupFee !== ""
+            ? String(persisted.checkupFee)
+            : registered?.checkupFee !== undefined
+            ? String(registered.checkupFee)
+            : mockDoctor?.checkupFee !== undefined
+            ? String(mockDoctor.checkupFee)
+            : String(doctorProfile?.checkupFee ?? "800"),
       });
 
       // Load availability — persisted first, fallback to mock

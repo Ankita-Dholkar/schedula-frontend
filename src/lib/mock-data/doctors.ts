@@ -57,6 +57,9 @@ export const doctors: Doctor[] = [
     licenseNumber: "PSY1001",
     hospitalName: "Mindwell Wellness Center",
     gender: "Male",
+    dob: "1988-05-14",
+    consultationFee: 500,
+    checkupFee: 800,
     city: "Bengaluru",
     address: "12 Serenity Lane, Koramangala",
     clinic: {
@@ -86,6 +89,9 @@ export const doctors: Doctor[] = [
     licenseNumber: "GP2002",
     hospitalName: "City Center Clinic",
     gender: "Female",
+    dob: "1985-09-22",
+    consultationFee: 450,
+    checkupFee: 750,
     city: "Pune",
     address: "45 MG Road, Shivajinagar",
     clinic: {
@@ -115,6 +121,9 @@ export const doctors: Doctor[] = [
     licenseNumber: "DERM3003",
     hospitalName: "Westside Skin & Aesthetics",
     gender: "Male",
+    dob: "1987-11-03",
+    consultationFee: 600,
+    checkupFee: 950,
     city: "Mumbai",
     address: "88 Hill Road, Bandra West",
     clinic: {
@@ -144,6 +153,9 @@ export const doctors: Doctor[] = [
     licenseNumber: "CARD4004",
     hospitalName: "HeartCare Specialty Hospital",
     gender: "Female",
+    dob: "1983-04-18",
+    consultationFee: 700,
+    checkupFee: 1200,
     city: "Hyderabad",
     address: "3 Cardiac Avenue, Jubilee Hills",
     clinic: {
@@ -173,6 +185,9 @@ export const doctors: Doctor[] = [
     licenseNumber: "ORTH5005",
     hospitalName: "Apollo Orthocare",
     gender: "Male",
+    dob: "1980-01-25",
+    consultationFee: 650,
+    checkupFee: 1100,
     city: "Chennai",
     address: "21 Anna Salai, Teynampet",
     clinic: {
@@ -205,6 +220,9 @@ export const doctors: Doctor[] = [
     licenseNumber: "PED6006",
     hospitalName: "Rainbow Children's Hospital",
     gender: "Female",
+    dob: "1986-07-30",
+    consultationFee: 500,
+    checkupFee: 850,
     city: "Ahmedabad",
     address: "7 Nehru Nagar, Satellite",
     clinic: {
@@ -224,12 +242,12 @@ export const doctors: Doctor[] = [
 // ── Doctor auth accounts — used for doctor login/signup ─────────────────────
 // IDs match the doctor profile IDs above so they can be linked
 export const mockDoctors: DoctorUser[] = [
-  { id: "doc-1", name: "Dr. Prakash Das",   email: "prakash@schedula.com", mobile: "9000000001", password: "doctor123", role: "doctor", specialization: "Sr. Psychologist", experience: 7,  licenseNumber: "PSY1001"  },
-  { id: "doc-2", name: "Dr. Anika Rao",     email: "anika@schedula.com",   mobile: "9000000002", password: "doctor123", role: "doctor", specialization: "General Physician",  experience: 10, licenseNumber: "GP2002"   },
-  { id: "doc-3", name: "Dr. Martin Cole",   email: "martin@schedula.com",  mobile: "9000000003", password: "doctor123", role: "doctor", specialization: "Dermatologist",       experience: 8,  licenseNumber: "DERM3003" },
-  { id: "doc-4", name: "Dr. Sarah Wilson",  email: "sarah@schedula.com",   mobile: "9000000004", password: "doctor123", role: "doctor", specialization: "Cardiologist",         experience: 12, licenseNumber: "CARD4004" },
-  { id: "doc-5", name: "Dr. Rajesh Sharma", email: "rajesh@schedula.com",  mobile: "9000000005", password: "doctor123", role: "doctor", specialization: "Orthopedic Surgeon",   experience: 15, licenseNumber: "ORTH5005" },
-  { id: "doc-6", name: "Dr. Meera Patel",   email: "meera@schedula.com",   mobile: "9000000006", password: "doctor123", role: "doctor", specialization: "Pediatrician",         experience: 9,  licenseNumber: "PED6006"  },
+  { id: "doc-1", name: "Dr. Prakash Das",   email: "prakash@schedula.com", mobile: "9000000001", password: "doctor123", role: "doctor", specialization: "Sr. Psychologist", experience: 7,  licenseNumber: "PSY1001",  consultationFee: 500, checkupFee: 800  },
+  { id: "doc-2", name: "Dr. Anika Rao",     email: "anika@schedula.com",   mobile: "9000000002", password: "doctor123", role: "doctor", specialization: "General Physician",  experience: 10, licenseNumber: "GP2002",   consultationFee: 450, checkupFee: 750  },
+  { id: "doc-3", name: "Dr. Martin Cole",   email: "martin@schedula.com",  mobile: "9000000003", password: "doctor123", role: "doctor", specialization: "Dermatologist",       experience: 8,  licenseNumber: "DERM3003", consultationFee: 600, checkupFee: 950  },
+  { id: "doc-4", name: "Dr. Sarah Wilson",  email: "sarah@schedula.com",   mobile: "9000000004", password: "doctor123", role: "doctor", specialization: "Cardiologist",         experience: 12, licenseNumber: "CARD4004", consultationFee: 700, checkupFee: 1200 },
+  { id: "doc-5", name: "Dr. Rajesh Sharma", email: "rajesh@schedula.com",  mobile: "9000000005", password: "doctor123", role: "doctor", specialization: "Orthopedic Surgeon",   experience: 15, licenseNumber: "ORTH5005", consultationFee: 650, checkupFee: 1100 },
+  { id: "doc-6", name: "Dr. Meera Patel",   email: "meera@schedula.com",   mobile: "9000000006", password: "doctor123", role: "doctor", specialization: "Pediatrician",         experience: 9,  licenseNumber: "PED6006",  consultationFee: 500, checkupFee: 850  },
 ];
 
 // localStorage override helpers (admin-managed status changes) 
@@ -343,7 +361,9 @@ export function getAllDoctors(): Doctor[] {
               hospitalName: u.hospitalName as string | undefined,
               city: u.city as string | undefined,
               address: u.address as string | undefined,
-              gender: u.gender as string | undefined,
+              dob: u.dob as string | undefined,
+              consultationFee: Number(u.consultationFee) || 500,
+              checkupFee: Number(u.checkupFee) || 800,
               availability: "Available",
               description: `${name} is a registered doctor on Schedula.`,
               availableTime: "09:00 AM - 05:00 PM",
@@ -356,7 +376,65 @@ export function getAllDoctors(): Doctor[] {
         });
     }
   } catch {
-    /* ignore — return static list */
+    /* ignore */
+  }
+
+  // Merge doctor profile updates from doctorProfiles (edited from Doctor Portal ProfileForm)
+  try {
+    const profilesRaw = localStorage.getItem("doctorProfiles");
+    if (profilesRaw) {
+      const profiles: Record<string, Record<string, unknown>> = JSON.parse(profilesRaw);
+      result.forEach((doc, idx) => {
+        const p =
+          profiles[doc.id] ||
+          profiles[doc.name] ||
+          (doc.email && profiles[doc.email]) ||
+          Object.entries(profiles).find(
+            ([k]) =>
+              k.toLowerCase() === doc.id.toLowerCase() ||
+              k.toLowerCase() === doc.name.toLowerCase() ||
+              k.toLowerCase().replace(/^dr\.\s*/i, "") === doc.name.toLowerCase().replace(/^dr\.\s*/i, "")
+          )?.[1];
+        if (p) {
+          result[idx] = {
+            ...doc,
+            name: (p.name as string) || doc.name,
+            email: (p.email as string) || doc.email,
+            mobile: (p.mobile as string) || doc.mobile,
+            specialization: (p.specialization as string) || doc.specialization,
+            experience:
+              p.experience !== undefined && p.experience !== ""
+                ? Number(p.experience) || doc.experience
+                : doc.experience,
+            licenseNumber: (p.licenseNumber as string) || doc.licenseNumber,
+            description: (p.description as string) || doc.description,
+            qualification: (p.qualification as string) || doc.qualification,
+            hospitalName: (p.hospitalName as string) || doc.hospitalName,
+            city: (p.city as string) || doc.city,
+            address: (p.address as string) || doc.address,
+            gender: (p.gender as string) || doc.gender,
+            dob: (p.dob as string) || doc.dob,
+            consultationFee:
+              p.consultationFee !== undefined && p.consultationFee !== ""
+                ? Number(p.consultationFee)
+                : doc.consultationFee ?? 500,
+            checkupFee:
+              p.checkupFee !== undefined && p.checkupFee !== ""
+                ? Number(p.checkupFee)
+                : doc.checkupFee ?? 800,
+            clinic:
+              p.hospitalName || p.address
+                ? {
+                    name: (p.hospitalName as string) || doc.clinic?.name || doc.hospitalName || "",
+                    address: (p.address as string) || doc.clinic?.address || doc.address || "",
+                  }
+                : doc.clinic,
+          };
+        }
+      });
+    }
+  } catch {
+    /* ignore */
   }
 
   // Apply admin overrides
@@ -381,4 +459,39 @@ export function getAllDoctors(): Doctor[] {
 
     return merged;
   });
+}
+
+/**
+ * Concise location string (e.g. "Mindwell Wellness Center, Bengaluru") for compact doctor cards.
+ */
+export function formatDoctorLocation(doctor: Partial<Doctor>): string {
+  const clinic = doctor.hospitalName || doctor.clinic?.name;
+  const city = doctor.city;
+  if (clinic && city) {
+    if (clinic.toLowerCase().includes(city.toLowerCase())) return clinic;
+    return `${clinic}, ${city}`;
+  }
+  return clinic || doctor.clinic?.address || doctor.address || city || "Schedula Medical Center";
+}
+
+/**
+ * Full address string for a doctor across all pages (e.g. "Mindwell Wellness Center, 12 Serenity Lane, Koramangala, Bengaluru").
+ */
+export function getDoctorFullAddress(doctor: Partial<Doctor>): string {
+  const clinic = doctor.hospitalName || doctor.clinic?.name || "";
+  const address = doctor.address || doctor.clinic?.address || "";
+  const city = doctor.city || "";
+  const parts = [clinic, address, city].filter(Boolean);
+  const uniqueParts: string[] = [];
+  parts.forEach((p) => {
+    if (!uniqueParts.some((u) => u.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(u.toLowerCase()))) {
+      uniqueParts.push(p);
+    } else {
+      const idx = uniqueParts.findIndex((u) => u.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(u.toLowerCase()));
+      if (idx !== -1 && p.length > uniqueParts[idx].length) {
+        uniqueParts[idx] = p;
+      }
+    }
+  });
+  return uniqueParts.join(", ") || doctor.clinic?.address || "Schedula Health Campus";
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   TrendingUp,
@@ -259,17 +259,23 @@ export default function AnalyticsPage() {
   const unknownModeCount =
     filteredAppts.length - onlineCount - inPersonCount;
 
+  const apptMap = useMemo(() => new Map(appointments.map((a) => [a.id, a])), [appointments]);
+  const getAmt = useCallback((p: Payment) => {
+    const appt = apptMap.get(p.appointmentId);
+    return appt?.consultationFee && appt.consultationFee > 0 ? appt.consultationFee : p.amount;
+  }, [apptMap]);
+
   const modePaidPayments = filteredPayments.filter(
     (p) => p.status === "paid"
   );
   const onlineRevenue = modePaidPayments.filter((p) => {
-    const appt = appointments.find((a) => a.id === p.appointmentId);
+    const appt = apptMap.get(p.appointmentId);
     return appt?.appointmentMode === "online";
-  }).reduce((s, p) => s + p.amount, 0);
+  }).reduce((s, p) => s + getAmt(p), 0);
   const inPersonRevenue = modePaidPayments.filter((p) => {
-    const appt = appointments.find((a) => a.id === p.appointmentId);
+    const appt = apptMap.get(p.appointmentId);
     return appt?.appointmentMode === "in-person";
-  }).reduce((s, p) => s + p.amount, 0);
+  }).reduce((s, p) => s + getAmt(p), 0);
 
   const modeSlices: DonutSlice[] = [
     { label: "Online", value: onlineCount, color: "#6366f1" },
@@ -321,23 +327,23 @@ export default function AnalyticsPage() {
 
   const totalRevenue = filteredPayments
     .filter((p) => p.status === "paid")
-    .reduce((s, p) => s + p.amount, 0);
+    .reduce((s, p) => s + getAmt(p), 0);
   const pendingRevenue = filteredPayments
     .filter((p) => p.status === "pending")
-    .reduce((s, p) => s + p.amount, 0);
+    .reduce((s, p) => s + getAmt(p), 0);
   const refundedAmount = filteredPayments
     .filter((p) => p.status === "refunded")
-    .reduce((s, p) => s + (p.refundAmount ?? p.amount), 0);
+    .reduce((s, p) => s + (p.refundAmount ?? getAmt(p)), 0);
   const failedCount = filteredPayments.filter(
     (p) => p.status === "failed"
   ).length;
 
   const cardRevenue = filteredPayments
     .filter((p) => p.status === "paid" && p.method === "card")
-    .reduce((s, p) => s + p.amount, 0);
+    .reduce((s, p) => s + getAmt(p), 0);
   const upiRevenue = filteredPayments
     .filter((p) => p.status === "paid" && p.method === "upi")
-    .reduce((s, p) => s + p.amount, 0);
+    .reduce((s, p) => s + getAmt(p), 0);
 
   const paymentMethodSlices: DonutSlice[] = [
     { label: "Card", value: cardRevenue, color: "#6366f1" },
@@ -355,7 +361,7 @@ export default function AnalyticsPage() {
         );
         return {
           label: d.toLocaleDateString("en-IN", { weekday: "short" }),
-          revenue: dayPayments.reduce((s, p) => s + p.amount, 0),
+          revenue: dayPayments.reduce((s, p) => s + getAmt(p), 0),
         };
       });
     }
@@ -366,10 +372,10 @@ export default function AnalyticsPage() {
       );
       return {
         label: monthLabel(ym),
-        revenue: monPayments.reduce((s, p) => s + p.amount, 0),
+        revenue: monPayments.reduce((s, p) => s + getAmt(p), 0),
       };
     });
-  }, [payments, range, rangeStart]);
+  }, [payments, range, rangeStart, getAmt]);
 
   const revenueSeries: TrendSeries[] = [
     { key: "revenue", label: "Revenue (₹)", color: "#10b981", gradientId: "grad-revenue" },

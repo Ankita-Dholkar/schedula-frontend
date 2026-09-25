@@ -52,7 +52,7 @@ const seedPayments: Payment[] = [
   {
     id: "pay-1043",
     appointmentId: "apt-1043",
-    amount: 500,
+    amount: 750,
     method: "card",
     status: "failed",
     createdAt: "2026-08-29T10:00:00.000Z",
@@ -89,7 +89,7 @@ const seedPayments: Payment[] = [
   {
     id: "pay-1050",
     appointmentId: "apt-1050",
-    amount: 500,
+    amount: 750,
     method: "card",
     status: "paid",
     transactionId: "DEMO-10500000",
@@ -147,7 +147,7 @@ const seedPayments: Payment[] = [
   {
     id: "pay-1056",
     appointmentId: "apt-1056",
-    amount: 500,
+    amount: 1200,
     method: "card",
     status: "pending",
     createdAt: "2026-09-11T09:30:00.000Z",
@@ -192,14 +192,14 @@ const seedPayments: Payment[] = [
   {
     id: "pay-1060",
     appointmentId: "apt-1050",
-    amount: 500,
+    amount: 750,
     method: "card",
     status: "refunded",
     transactionId: "DEMO-10500001",
     createdAt: "2026-09-03T09:30:00.000Z",
     updatedAt: "2026-09-10T14:45:00.000Z",
     refundId: "REFUND-59031003",
-    refundAmount: 500,
+    refundAmount: 750,
     refundReason: "Patient rescheduled and duplicate payment identified",
     refundedAt: "2026-09-10T14:45:00.000Z",
   },
@@ -210,14 +210,56 @@ const seedPayments: Payment[] = [
  * Falls back to seedPayments when no persisted data exists yet.
  */
 export function getAllPayments(): Payment[] {
+  let list = seedPayments;
   if (typeof window === "undefined") return seedPayments;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as Payment[];
+    if (raw) list = JSON.parse(raw) as Payment[];
   } catch {
     /* ignore parse errors */
   }
-  return seedPayments;
+
+  // Reconcile stored payments with latest appointment fees and seed updates
+  try {
+    const bookedRaw = localStorage.getItem("bookedAppointments");
+    const bookedList: Array<{ id: string; consultationFee?: number }> = bookedRaw
+      ? JSON.parse(bookedRaw)
+      : [];
+    const bookedMap = new Map(bookedList.map((b) => [b.id, b]));
+
+    let hasChanges = false;
+    list = list.map((p) => {
+      // 1. Reconcile with patient-booked appointment fees
+      const booked = bookedMap.get(p.appointmentId);
+      if (booked && typeof booked.consultationFee === "number" && booked.consultationFee > 0) {
+        if (p.amount !== booked.consultationFee) {
+          hasChanges = true;
+          return { ...p, amount: booked.consultationFee };
+        }
+      }
+
+      // 2. Reconcile with seed payments (e.g. check-up payments updated from 500 default)
+      const seed = seedPayments.find((s) => s.id === p.id);
+      if (seed && p.amount === 500 && seed.amount !== 500) {
+        hasChanges = true;
+        return {
+          ...p,
+          amount: seed.amount,
+          ...(p.refundAmount !== undefined ? { refundAmount: seed.refundAmount ?? seed.amount } : {}),
+        };
+      }
+
+      return p;
+    });
+
+    if (hasChanges) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return list;
 }
 
 /**

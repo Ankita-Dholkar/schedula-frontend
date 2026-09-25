@@ -6,6 +6,9 @@ import { Eye, EyeOff, Shield, AlertCircle, Loader2 } from "lucide-react";
 import { adminLogin } from "@/features/auth/api/adminLogin";
 import { setAdminUser } from "@/store/slices/adminAuthSlice";
 import { hydrateAdminManagement } from "@/store/slices/adminManagementSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
+import { ROLE_META } from "@/types/admin";
 import { useAppDispatch } from "@/store/hooks";
 
 const STORAGE_KEY = "loggedInAdmin";
@@ -55,6 +58,17 @@ export default function AdminLoginForm() {
     // Dispatch to Redux (pure — no localStorage in reducer)
     dispatch(setAdminUser(result.admin));
     dispatch(hydrateAdminManagement());
+    dispatch(logAdminAction({
+      actor: getAuditActor(result.admin),
+      action: "ADMIN_LOGIN",
+      entityType: "auth",
+      entityId: result.admin.id,
+      entityName: result.admin.name,
+      details: `Admin ${result.admin.name} (${ROLE_META[result.admin.adminRole]?.label ?? result.admin.adminRole}) logged into the admin portal.`,
+      metadata: { email: result.admin.email, role: result.admin.adminRole },
+      ipAddress: "127.0.0.1",
+      severity: "info",
+    }));
 
     // Persist session to dedicated localStorage key
     try {

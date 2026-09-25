@@ -6,6 +6,7 @@ import { Eye, EyeOff, User, Stethoscope, Phone, Lock, ChevronRight, ChevronLeft,
 import type { Role } from "@/types/user";
 import Link from "next/link";
 import Toast from "@/features/auth/components/Toast";
+import { SPECIALTIES } from "@/lib/specialties";
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 type DoctorStep = 1 | 2 | 3 | 4;
@@ -45,17 +46,16 @@ type PatientErrors = Partial<Record<keyof PatientForm, string>>;
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 const inputClass = (error?: string) =>
-  `w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)] placeholder:text-stone-400 ${
-    error ? "border-red-400" : "border-[var(--line)]"
+  `w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)] placeholder:text-stone-400 ${error ? "border-red-400" : "border-[var(--line)]"
   }`;
 
 const labelClass = "mb-1.5 block text-sm font-medium text-[var(--ink)]";
 
 const STEPS: { title: string; subtitle: string; icon: React.ElementType }[] = [
-  { title: "Personal Details",     subtitle: "Basic personal information",       icon: User },
-  { title: "Professional Info",    subtitle: "Qualifications & experience",       icon: Stethoscope },
-  { title: "Contact Details",      subtitle: "How patients can reach you",        icon: Phone },
-  { title: "Account Security",     subtitle: "Set your login credentials",        icon: Lock },
+  { title: "Personal Details", subtitle: "Basic personal information", icon: User },
+  { title: "Professional Info", subtitle: "Qualifications & experience", icon: Stethoscope },
+  { title: "Contact Details", subtitle: "How patients can reach you", icon: Phone },
+  { title: "Account Security", subtitle: "Set your login credentials", icon: Lock },
 ];
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
@@ -63,9 +63,9 @@ export default function SignupForm() {
   const [role, setRole] = useState<Role>("patient");
   const [step, setStep] = useState<DoctorStep>(1);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm]   = useState(false);
-  const [isLoading, setIsLoading]       = useState(false);
-  const [toast, setToast]               = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   /* ── Doctor form state ── */
   const [doctorForm, setDoctorForm] = useState<DoctorForm>({
@@ -111,28 +111,28 @@ export default function SignupForm() {
     let ok = true;
 
     if (s === 1) {
-      if (!doctorForm.name.trim())    { errs.name   = "Full name is required"; ok = false; }
-      if (!doctorForm.dob)            { errs.dob    = "Date of birth is required"; ok = false; }
-      if (!doctorForm.gender)         { errs.gender = "Please select a gender"; ok = false; }
+      if (!doctorForm.name.trim()) { errs.name = "Full name is required"; ok = false; }
+      if (!doctorForm.dob) { errs.dob = "Date of birth is required"; ok = false; }
+      if (!doctorForm.gender) { errs.gender = "Please select a gender"; ok = false; }
     }
 
     if (s === 2) {
       if (!doctorForm.specialization.trim()) { errs.specialization = "Specialization is required"; ok = false; }
-      if (!doctorForm.qualification.trim())  { errs.qualification  = "Qualification is required"; ok = false; }
-      if (!doctorForm.licenseNumber.trim())  { errs.licenseNumber  = "License number is required"; ok = false; }
+      if (!doctorForm.qualification.trim()) { errs.qualification = "Qualification is required"; ok = false; }
+      if (!doctorForm.licenseNumber.trim()) { errs.licenseNumber = "License number is required"; ok = false; }
       if (!doctorForm.experience || Number(doctorForm.experience) < 0) { errs.experience = "Enter valid years of experience"; ok = false; }
-      if (!doctorForm.hospitalName.trim())   { errs.hospitalName   = "Hospital / Clinic name is required"; ok = false; }
+      if (!doctorForm.hospitalName.trim()) { errs.hospitalName = "Hospital / Clinic name is required"; ok = false; }
     }
 
     if (s === 3) {
-      if (!doctorForm.email.includes("@"))         { errs.email  = "Please enter a valid email"; ok = false; }
-      if (!/^[0-9]{10}$/.test(doctorForm.mobile))  { errs.mobile = "Enter a valid 10-digit mobile number"; ok = false; }
-      if (!doctorForm.city.trim())                 { errs.city   = "City is required"; ok = false; }
+      if (!doctorForm.email.includes("@")) { errs.email = "Please enter a valid email"; ok = false; }
+      if (!/^[0-9]{10}$/.test(doctorForm.mobile)) { errs.mobile = "Enter a valid 10-digit mobile number"; ok = false; }
+      if (!doctorForm.city.trim()) { errs.city = "City is required"; ok = false; }
     }
 
     if (s === 4) {
-      if (doctorForm.password.length < 6)                           { errs.password        = "Password must be at least 6 characters"; ok = false; }
-      if (doctorForm.confirmPassword !== doctorForm.password)       { errs.confirmPassword = "Passwords do not match"; ok = false; }
+      if (doctorForm.password.length < 6) { errs.password = "Password must be at least 6 characters"; ok = false; }
+      if (doctorForm.confirmPassword !== doctorForm.password) { errs.confirmPassword = "Passwords do not match"; ok = false; }
     }
 
     setDoctorErrors(errs);
@@ -142,10 +142,10 @@ export default function SignupForm() {
   const validatePatient = (): boolean => {
     const errs: PatientErrors = {};
     let ok = true;
-    if (!patientForm.name.trim())                        { errs.name     = "Full name is required"; ok = false; }
-    if (!patientForm.email.includes("@"))                { errs.email    = "Please enter a valid email"; ok = false; }
-    if (!/^[0-9]{10}$/.test(patientForm.mobile))         { errs.mobile   = "Enter a valid 10-digit mobile number"; ok = false; }
-    if (patientForm.password.length < 6)                 { errs.password = "Password must be at least 6 characters"; ok = false; }
+    if (!patientForm.name.trim()) { errs.name = "Full name is required"; ok = false; }
+    if (!patientForm.email.includes("@")) { errs.email = "Please enter a valid email"; ok = false; }
+    if (!/^[0-9]{10}$/.test(patientForm.mobile)) { errs.mobile = "Enter a valid 10-digit mobile number"; ok = false; }
+    if (patientForm.password.length < 6) { errs.password = "Password must be at least 6 characters"; ok = false; }
     setPatientErrors(errs);
     return ok;
   };
@@ -259,8 +259,17 @@ export default function SignupForm() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>Specialization <span className="text-red-500">*</span></label>
-                <input name="specialization" type="text" value={doctorForm.specialization} onChange={handleDoctorChange}
-                  placeholder="e.g. Cardiologist" className={inputClass(doctorErrors.specialization)} />
+                <select
+                  name="specialization"
+                  value={doctorForm.specialization}
+                  onChange={handleDoctorChange}
+                  className={inputClass(doctorErrors.specialization)}
+                >
+                  <option value="">Select specialization…</option>
+                  {SPECIALTIES.map((spec) => (
+                    <option key={spec} value={spec}>{spec}</option>
+                  ))}
+                </select>
                 {doctorErrors.specialization && <p className="mt-1 text-xs text-red-500">{doctorErrors.specialization}</p>}
               </div>
               <div>
@@ -399,11 +408,10 @@ export default function SignupForm() {
           <div className="mt-5 flex rounded-lg bg-[var(--canvas)] p-1 border border-[var(--line)]">
             {(["patient", "doctor"] as Role[]).map((r) => (
               <button key={r} type="button"
-                className={`flex-1 rounded-md py-2 text-sm font-medium transition capitalize ${
-                  role === r
+                className={`flex-1 rounded-md py-2 text-sm font-medium transition capitalize ${role === r
                     ? "bg-white text-[var(--brand)] shadow-sm border border-[var(--line)]"
                     : "text-[var(--muted)] hover:text-[var(--ink)]"
-                }`}
+                  }`}
                 onClick={() => { setRole(r); setStep(1); }}>
                 {r === "patient" ? "I am a Patient" : "I am a Doctor"}
               </button>
@@ -422,11 +430,10 @@ export default function SignupForm() {
                     const active = n === step;
                     return (
                       <div key={n} className="flex flex-1 items-center">
-                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition ${
-                          done   ? "bg-[var(--brand)] text-white"
-                          : active ? "bg-[var(--brand)] text-white ring-4 ring-teal-100"
-                          : "bg-[var(--canvas)] border border-[var(--line)] text-[var(--muted)]"
-                        }`}>
+                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition ${done ? "bg-[var(--brand)] text-white"
+                            : active ? "bg-[var(--brand)] text-white ring-4 ring-teal-100"
+                              : "bg-[var(--canvas)] border border-[var(--line)] text-[var(--muted)]"
+                          }`}>
                           {done ? <CheckCircle2 size={14} /> : n}
                         </div>
                         {i < STEPS.length - 1 && (

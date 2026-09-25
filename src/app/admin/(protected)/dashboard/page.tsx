@@ -15,6 +15,7 @@ import {
   XCircle,
   AlertCircle,
   Activity,
+  CreditCard,
 } from "lucide-react";
 import type { Appointment } from "@/types/appointment";
 import type { Doctor } from "@/types/doctor";
@@ -163,10 +164,21 @@ function AppointmentTrend({ appointments }: { appointments: Appointment[] }) {
 export default function AdminDashboardPage() {
   const appointments = useAppSelector((s) => s.appointments.appointments);
   const doctors = useAppSelector((s) => s.doctors.doctors);
+  const payments = useAppSelector((s) => s.payments.payments);
 
   // Derived metrics 
   const totalDoctors      = doctors.length;
   const totalAppointments = appointments.length;
+
+  const totalRevenue = useMemo(() => {
+    const apptMap = new Map(appointments.map((a) => [a.id, a]));
+    return payments
+      .filter((p) => p.status === "paid")
+      .reduce((sum, p) => {
+        const appt = apptMap.get(p.appointmentId);
+        return sum + (appt?.consultationFee && appt.consultationFee > 0 ? appt.consultationFee : p.amount);
+      }, 0);
+  }, [payments, appointments]);
 
   // Total Patients = unique registered patient accounts (static mock + runtime signup)
   const [totalPatients, setTotalPatients] = useState(mockPatients.length);
@@ -264,7 +276,7 @@ export default function AdminDashboardPage() {
 
       {/* ── Secondary metrics row ── */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="col-span-2 grid grid-cols-2 gap-4">
+        <div className="col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           <div className="rounded-2xl border border-[var(--line)] bg-white p-5 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
@@ -287,6 +299,22 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           </div>
+          <Link
+            href="/admin/payments"
+            className="group rounded-2xl border border-[var(--line)] bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 group-hover:bg-teal-100 transition-colors">
+                <CreditCard size={19} className="text-[var(--brand)]" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-[var(--muted)] font-medium">Revenue</p>
+                <p className="text-2xl font-bold text-[var(--ink)] truncate">
+                  ₹{totalRevenue.toLocaleString("en-IN")}
+                </p>
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* Status breakdown */}

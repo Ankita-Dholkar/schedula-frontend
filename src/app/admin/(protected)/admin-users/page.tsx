@@ -25,6 +25,8 @@ import {
   selectAllAdmins,
 } from "@/store/slices/adminManagementSlice";
 import { updateAdminProfile } from "@/store/slices/adminAuthSlice";
+import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import { saveAdminUsers } from "@/lib/mock-data/admins";
 import {
   wouldRemoveLastSuperAdmin,
@@ -138,8 +140,19 @@ export default function AdminUsersPage() {
       notificationPreferences: DEFAULT_NOTIFICATION_PREFERENCES,
     };
     dispatch(addAdmin(newAdmin));
+    dispatch(logAdminAction({
+      actor: getAuditActor(currentAdmin),
+      action: "ADMIN_USER_CREATED",
+      entityType: "admin_user",
+      entityId: newAdmin.id,
+      entityName: newAdmin.name,
+      details: `Created new admin user ${newAdmin.name} (${ROLE_META[newAdmin.adminRole]?.label ?? newAdmin.adminRole}).`,
+      metadata: { role: newAdmin.adminRole, email: newAdmin.email },
+      ipAddress: "127.0.0.1",
+      severity: "info",
+    }));
     setFormMode(null);
-  }, [dispatch]);
+  }, [dispatch, currentAdmin]);
 
   const handleEditAdmin = useCallback((data: Partial<AdminManagedUser>) => {
     if (!selectedAdmin) return;
@@ -153,6 +166,17 @@ export default function AdminUsersPage() {
     }
 
     dispatch(updateAdmin({ id: selectedAdmin.id, changes: data }));
+    dispatch(logAdminAction({
+      actor: getAuditActor(currentAdmin),
+      action: "ADMIN_USER_UPDATED",
+      entityType: "admin_user",
+      entityId: selectedAdmin.id,
+      entityName: selectedAdmin.name,
+      details: `Updated admin user ${selectedAdmin.name}.`,
+      metadata: { changes: data },
+      ipAddress: "127.0.0.1",
+      severity: "info",
+    }));
 
     // If editing self, also update Redux auth state and localStorage session
     if (currentAdmin?.id === selectedAdmin.id) {
@@ -189,6 +213,18 @@ export default function AdminUsersPage() {
     }
 
     dispatch(setAdminActiveStatus({ id: targetId, isActive: activate }));
+    const targetAdmin = allAdmins.find((a) => a.id === targetId);
+    dispatch(logAdminAction({
+      actor: getAuditActor(currentAdmin),
+      action: "ADMIN_USER_STATUS_TOGGLED",
+      entityType: "admin_user",
+      entityId: targetId,
+      entityName: targetAdmin?.name ?? targetId,
+      details: `Admin user ${targetAdmin?.name ?? targetId} ${activate ? "activated" : "deactivated"} by admin.`,
+      metadata: { targetId, isActive: activate },
+      ipAddress: "127.0.0.1",
+      severity: activate ? "info" : "warning",
+    }));
     setDeactivateTarget(null);
   }, [dispatch, allAdmins, currentAdmin]);
 

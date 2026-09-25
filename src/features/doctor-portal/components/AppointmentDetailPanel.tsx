@@ -225,12 +225,22 @@ export default function AppointmentDetailPanel({ appointment, appointments = [],
               </p>
             </div>
             <div className="space-y-2.5 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-[var(--muted)]">Consultation Fee</span>
-                <span className="font-bold text-[var(--ink)]">
-                  ₹{appointment.consultationFee ?? CONSULTATION_FEE}
-                </span>
-              </div>
+              {(() => {
+                const isCheckup = Boolean(
+                  (appointment.type && appointment.type.toLowerCase().includes("check")) ||
+                  (appointment.reason && appointment.reason.toLowerCase().includes("check"))
+                );
+                return (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[var(--muted)]">
+                      {isCheckup ? "Check-up Fee" : "Consultation Fee"}
+                    </span>
+                    <span className="font-bold text-[var(--ink)]">
+                      ₹{appointment.consultationFee ?? (isCheckup ? 800 : 300)}
+                    </span>
+                  </div>
+                );
+              })()}
               <div className="flex items-center justify-between">
                 <span className="text-[var(--muted)]">Payment Status</span>
                 {appointment.paymentStatus === "paid" ? (

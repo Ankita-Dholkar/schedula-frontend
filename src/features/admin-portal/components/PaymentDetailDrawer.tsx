@@ -143,6 +143,15 @@ export default function PaymentDetailDrawer({
       <CreditCard size={14} className="text-[var(--brand)]" />
     );
 
+  const isCheckup = Boolean(
+    (appointment?.type && appointment.type.toLowerCase().includes("check")) ||
+    (appointment?.reason && appointment.reason.toLowerCase().includes("check"))
+  );
+  const displayAmount =
+    appointment?.consultationFee && appointment.consultationFee > 0
+      ? appointment.consultationFee
+      : payment.amount;
+
   return (
     <>
       {/* Backdrop */}
@@ -190,10 +199,10 @@ export default function PaymentDetailDrawer({
           {/* ── Amount card ── */}
           <div className="rounded-2xl bg-gradient-to-br from-teal-600 to-teal-700 p-5 text-white shadow-md">
             <p className="text-xs font-semibold uppercase tracking-wider text-teal-200">
-              Consultation Fee
+              {isCheckup ? "Check-up Fee" : "Consultation Fee"}
             </p>
             <p className="mt-1 text-4xl font-extrabold tracking-tight">
-              ₹{payment.amount.toLocaleString()}
+              ₹{displayAmount.toLocaleString()}
             </p>
             <div className="mt-3 flex items-center justify-between">
               <StatusPill status={payment.status} />
@@ -218,7 +227,7 @@ export default function PaymentDetailDrawer({
                 <DetailRow label="Transaction ID" value={payment.transactionId} mono />
               )}
               <DetailRow label="Payment Method" value={payment.method === "upi" ? "UPI" : "Card"} />
-              <DetailRow label="Amount" value={`₹${payment.amount.toLocaleString()}`} />
+              <DetailRow label="Amount" value={`₹${displayAmount.toLocaleString()}`} />
               <DetailRow label="Status" value={<StatusPill status={payment.status} />} />
               <DetailRow label="Created" value={fmtDateTime(payment.createdAt)} />
               {payment.updatedAt && (

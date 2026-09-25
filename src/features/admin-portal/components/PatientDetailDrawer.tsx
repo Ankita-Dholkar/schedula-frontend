@@ -13,6 +13,7 @@ import ConfirmationDialog from "./ConfirmationDialog";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setPatientAccountStatus, refreshPatients } from "@/store/slices/patientsSlice";
 import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import { getUserHealthProfile } from "@/lib/mock-data/userProfiles";
 import { getComputedAppointmentStatus } from "@/lib/mock-data/appointments";
 import { hasPermission } from "@/lib/admin/permissions";
@@ -131,7 +132,7 @@ export default function PatientDetailDrawer({ patient, open, onClose }: Props) {
       accountStatus: newStatus,
     }));
     dispatch(logAdminAction({
-      actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+      actor: getAuditActor(currentAdmin),
       action: "PATIENT_STATUS_TOGGLED",
       entityType: "patient",
       entityId: patient.id,

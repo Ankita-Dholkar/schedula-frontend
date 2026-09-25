@@ -11,9 +11,10 @@ import {
   Loader2,
   Bell,
 } from "lucide-react";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { sendNotification } from "@/store/slices/adminNotificationsSlice";
 import { logAdminAction } from "@/store/slices/auditLogsSlice";
+import { getAuditActor } from "@/types/auditLog";
 import type {
   AdminNotification,
   NotificationTarget,
@@ -80,6 +81,7 @@ type Props = {
 
 export default function SendNotificationModal({ open, onClose, onSent }: Props) {
   const dispatch = useAppDispatch();
+  const currentAdmin = useAppSelector((s) => s.adminAuth.admin);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Form state
@@ -155,13 +157,13 @@ export default function SendNotificationModal({ open, onClose, onSent }: Props) 
       category,
       status: "sent",
       sentAt: new Date().toISOString(),
-      sentBy: "admin",
+      sentBy: currentAdmin?.name ?? "Admin",
       recipientCount: approximateRecipientCount(target, selectedUsers),
     };
 
     dispatch(sendNotification(notification));
     dispatch(logAdminAction({
-      actor: { id: "admin-001", name: "Super Admin", email: "admin@schedula.com", role: "admin" },
+      actor: getAuditActor(currentAdmin),
       action: "NOTIFICATION_BROADCAST",
       entityType: "notification",
       entityId: notification.id,

@@ -45,6 +45,10 @@ export type Doctor = {
   city?: string;
   gender?: string;
   dob?: string;
+  /** Consultation fee in INR (must be strictly lower than checkupFee) */
+  consultationFee?: number;
+  /** Check-up fee in INR (must be strictly higher than consultationFee) */
+  checkupFee?: number;
 
   // ── Admin-managed status fields ──
   /**

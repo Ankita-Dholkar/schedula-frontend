@@ -32,6 +32,8 @@ export type DoctorUser = BaseUser & {
   specialization?: string;
   experience?: number;
   licenseNumber?: string;
+  consultationFee?: number;
+  checkupFee?: number;
 };
 
 export type AdminUser = BaseUser & {

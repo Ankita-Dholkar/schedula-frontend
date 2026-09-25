@@ -98,7 +98,91 @@ export default function DoctorDashboardPage() {
     paid:      myAppointments.filter((a) => a.paymentStatus === "paid").length,
     unpaid:    myAppointments.filter((a) => a.paymentStatus === "pending" || a.paymentStatus === "failed").length,
   };
-  const collectedRevenue = allCounts.paid * CONSULTATION_FEE;
+
+  //current doctor's configured consultation fee
+  const currentDoctorFee = (() => {
+    try {
+      const stored = localStorage.getItem("loggedInUser");
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u.consultationFee !== undefined && u.consultationFee !== "") {
+          return Number(u.consultationFee);
+        }
+      }
+      const profilesRaw = localStorage.getItem("doctorProfiles");
+      if (profilesRaw) {
+        const profiles = JSON.parse(profilesRaw);
+        const p =
+          (doctorId && profiles[doctorId]) ||
+          (doctorName && profiles[doctorName]) ||
+          (doctorName && Object.entries(profiles).find(([k]) =>
+            k.toLowerCase() === doctorName.toLowerCase() ||
+            k.toLowerCase().replace(/^dr\.\s*/i, "") === doctorName.toLowerCase().replace(/^dr\.\s*/i, "")
+          )?.[1]);
+        if (p?.consultationFee !== undefined && p?.consultationFee !== "") {
+          return Number(p.consultationFee);
+        }
+      }
+    } catch { /* ignore */ }
+    return thisDoctor?.consultationFee ?? 500;
+  })();
+
+  const currentDoctorCheckupFee = (() => {
+    try {
+      const stored = localStorage.getItem("loggedInUser");
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u.checkupFee !== undefined && u.checkupFee !== "") {
+          return Number(u.checkupFee);
+        }
+      }
+      const profilesRaw = localStorage.getItem("doctorProfiles");
+      if (profilesRaw) {
+        const profiles = JSON.parse(profilesRaw);
+        const p =
+          (doctorId && profiles[doctorId]) ||
+          (doctorName && profiles[doctorName]) ||
+          (doctorName && Object.entries(profiles).find(([k]) =>
+            k.toLowerCase() === doctorName.toLowerCase() ||
+            k.toLowerCase().replace(/^dr\.\s*/i, "") === doctorName.toLowerCase().replace(/^dr\.\s*/i, "")
+          )?.[1]);
+        if (p?.checkupFee !== undefined && p?.checkupFee !== "") {
+          return Number(p.checkupFee);
+        }
+      }
+    } catch { /* ignore */ }
+    return thisDoctor?.checkupFee ?? 800;
+  })();
+
+  // Calculate actual collected revenue from all paid appointments
+  const collectedRevenue = myAppointments
+    .filter((a) => a.paymentStatus === "paid")
+    .reduce((sum, a) => {
+      const isCheckup = Boolean(
+        (a.type && a.type.toLowerCase().includes("check")) ||
+        (a.reason && a.reason.toLowerCase().includes("check"))
+      );
+
+      let fee: number;
+      if (isCheckup) {
+        if (
+          typeof a.consultationFee === "number" &&
+          a.consultationFee !== 500 &&
+          a.consultationFee !== currentDoctorFee
+        ) {
+          fee = a.consultationFee;
+        } else {
+          fee = currentDoctorCheckupFee;
+        }
+      } else {
+        if (typeof a.consultationFee === "number" && a.consultationFee !== 500) {
+          fee = a.consultationFee;
+        } else {
+          fee = currentDoctorFee;
+        }
+      }
+      return sum + fee;
+    }, 0);
 
   // Upcoming: future pending or confirmed
   const upcoming = myAppointments
