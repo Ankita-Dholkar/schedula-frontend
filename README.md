@@ -13,7 +13,7 @@ Full access to system analytics, revenue monitoring, doctor verifications, patie
 
 | Role | Admin Level | Name | Email | Password | Access URL |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Admin** | Super Admin | Super Admin | `admin@schedula.com` *(or `admin123@schedula.com`)* | `admin123` | `/admin/login` or `/login` |
+| **Admin** | Super Admin | Super Admin | `admin123@schedula.com` | `admin123` | `/admin/login` or `/login` |
 | **Admin** | Operations Admin | Ops Admin | `ops@schedula.com` | `ops123` | `/admin/login` or `/login` |
 | **Admin** | Support Staff | Support Staff | `support@schedula.com` | `support123` | `/admin/login` or `/login` |
 
