@@ -310,19 +310,65 @@ export default function PaymentDetailDrawer({
           )}
 
           {/* ── Refund details ── */}
-          {payment.status === "refunded" && (
-            <div className="rounded-xl border border-violet-200 bg-violet-50">
-              <div className="flex items-center gap-2 border-b border-violet-200 px-4 py-3">
-                <RefreshCw size={14} className="text-violet-600" />
-                <p className="text-xs font-semibold uppercase tracking-wider text-violet-600">
-                  Refund Information
+          {(payment.status === "refunded" || payment.refundStatus) && payment.refundStatus !== "none" && (
+            <div className={`rounded-xl border ${
+              payment.refundStatus === "requested"
+                ? "border-amber-200 bg-amber-50"
+                : payment.refundStatus === "rejected"
+                ? "border-red-200 bg-red-50"
+                : "border-violet-200 bg-violet-50"
+            }`}>
+              <div className={`flex items-center gap-2 border-b px-4 py-3 ${
+                payment.refundStatus === "requested"
+                  ? "border-amber-200"
+                  : payment.refundStatus === "rejected"
+                  ? "border-red-200"
+                  : "border-violet-200"
+              }`}>
+                <RefreshCw size={14} className={
+                  payment.refundStatus === "requested"
+                    ? "text-amber-600"
+                    : payment.refundStatus === "rejected"
+                    ? "text-red-600"
+                    : "text-violet-600"
+                } />
+                <p className={`text-xs font-semibold uppercase tracking-wider ${
+                  payment.refundStatus === "requested"
+                    ? "text-amber-600"
+                    : payment.refundStatus === "rejected"
+                    ? "text-red-600"
+                    : "text-violet-600"
+                }`}>
+                  {payment.refundStatus === "requested"
+                    ? "Refund Requested"
+                    : payment.refundStatus === "rejected"
+                    ? "Refund Rejected"
+                    : "Refund Information"}
                 </p>
               </div>
               <div className="px-4">
+                {payment.refundRequestedBy && (
+                  <DetailRow label="Requested By" value={payment.refundRequestedBy} />
+                )}
+                {payment.refundRequestedAt && (
+                  <DetailRow label="Requested On" value={fmtDateTime(payment.refundRequestedAt)} />
+                )}
+                {payment.refundReason && (
+                  <div className="py-2.5 border-b border-[var(--line)] last:border-0">
+                    <span className={`text-xs font-medium ${
+                      payment.refundStatus === "requested" ? "text-amber-600" : "text-violet-600"
+                    }`}>
+                      Patient&apos;s Reason
+                    </span>
+                    <p className="mt-1 text-sm text-[var(--ink)] leading-relaxed">
+                      {payment.refundReason}
+                    </p>
+                  </div>
+                )}
                 {payment.refundId && (
                   <DetailRow label="Refund ID" value={payment.refundId} mono />
                 )}
-                {payment.refundAmount !== undefined && (
+                {payment.refundAmount !== undefined && payment.refundStatus === "refunded" && (
                   <DetailRow
                     label="Refund Amount"
                     value={`₹${payment.refundAmount.toLocaleString()}`}
@@ -330,19 +376,25 @@ export default function PaymentDetailDrawer({
                 )}
                 {payment.refundedAt && (
                   <DetailRow
-                    label="Refund Date"
+                    label="Refunded On"
                     value={fmtDate(payment.refundedAt)}
                   />
                 )}
-                {payment.refundReason && (
-                  <div className="py-2.5 border-b border-violet-200 last:border-0">
-                    <span className="text-xs font-medium text-violet-600">
-                      Refund Reason
+                {payment.refundRejectedReason && (
+                  <div className="py-2.5 border-b border-red-200 last:border-0">
+                    <span className="text-xs font-medium text-red-600">
+                      Rejection Reason
                     </span>
                     <p className="mt-1 text-sm text-[var(--ink)] leading-relaxed">
-                      {payment.refundReason}
+                      {payment.refundRejectedReason}
                     </p>
                   </div>
+                )}
+                {payment.refundRejectedAt && (
+                  <DetailRow
+                    label="Rejected On"
+                    value={fmtDateTime(payment.refundRejectedAt)}
+                  />
                 )}
               </div>
             </div>
@@ -352,3 +404,4 @@ export default function PaymentDetailDrawer({
     </>
   );
 }
+

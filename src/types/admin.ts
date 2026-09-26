@@ -166,6 +166,7 @@ export type PlatformSettings = {
   platformName: string;
   supportEmail: string;
   maintenanceMode: boolean;
+  maintenanceMessage?: string;
   appointmentBufferMinutes: number;
   maxAdvanceBookingDays: number;
   currency: "INR" | "USD";

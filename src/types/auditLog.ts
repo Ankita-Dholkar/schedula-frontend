@@ -19,6 +19,7 @@ export type AuditActionType =
   | "REVIEW_HIDDEN"
   | "REVIEW_RESTORED"
   | "PAYMENT_REFUNDED"
+  | "REFUND_REJECTED"
   | "ADMIN_LOGIN"
   | "ADMIN_LOGOUT"
   | "ADMIN_USER_CREATED"
@@ -41,6 +42,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditActionType, string> = {
   REVIEW_HIDDEN:              "Hidden Reported Review",
   REVIEW_RESTORED:            "Restored Hidden Review",
   PAYMENT_REFUNDED:           "Recorded Payment Refund",
+  REFUND_REJECTED:            "Rejected Refund Request",
   ADMIN_LOGIN:                "Admin Login",
   ADMIN_LOGOUT:               "Admin Logout",
   ADMIN_USER_CREATED:         "Created Admin User",
@@ -76,6 +78,7 @@ export const ACTION_CATEGORY_MAP: Record<AuditActionType, AuditActionCategory> =
   REVIEW_HIDDEN:              "reviews",
   REVIEW_RESTORED:            "reviews",
   PAYMENT_REFUNDED:           "payments",
+  REFUND_REJECTED:            "payments",
   ADMIN_LOGIN:                "auth",
   ADMIN_LOGOUT:               "auth",
   ADMIN_USER_CREATED:         "admin_management",

@@ -33,7 +33,7 @@ export default function DoctorPortalLayout({
 
   return (
     <SidebarToggleContext.Provider value={() => setSidebarOpen(true)}>
-      <div className="flex h-screen overflow-hidden bg-[var(--canvas)]">
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-[var(--canvas)]">
         {/* Sidebar — drawer on mobile, static on lg+ */}
         <DoctorSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 

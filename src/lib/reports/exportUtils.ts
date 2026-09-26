@@ -63,7 +63,10 @@ export async function exportExcel(
   meta: ExportMeta,
   filename = "export.xlsx"
 ): Promise<void> {
-  const XLSX = (await import("xlsx")).default;
+  const xlsxModule = await import("xlsx");
+  const XLSX = (xlsxModule as any).utils
+    ? (xlsxModule as any)
+    : ((xlsxModule as any).default || xlsxModule);
 
   // Build worksheet data: header row + data rows
   const wsData: unknown[][] = [

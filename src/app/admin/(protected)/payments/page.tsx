@@ -199,6 +199,7 @@ export default function AdminPaymentsPage() {
       pending: payments.filter((p) => p.status === "pending").length,
       failed: payments.filter((p) => p.status === "failed").length,
       refunded: payments.filter((p) => p.status === "refunded").length,
+      refundRequested: payments.filter((p) => p.refundStatus === "requested").length,
     };
   }, [payments, appointmentMap]);
 
@@ -343,6 +344,16 @@ export default function AdminPaymentsPage() {
           iconBg="bg-violet-50"
           iconColor="text-violet-600"
         />
+        {metrics.refundRequested > 0 && (
+          <MetricCard
+            label="Refund Reqs."
+            value={metrics.refundRequested}
+            sub="Awaiting review"
+            icon={RotateCcw}
+            iconBg="bg-amber-50"
+            iconColor="text-amber-600"
+          />
+        )}
       </div>
 
       {/* Search & Filters */}
@@ -565,6 +576,16 @@ export default function AdminPaymentsPage() {
                         {/* Status */}
                         <td className="px-4 py-3.5">
                           <StatusBadge status={payment.status} />
+                          {payment.refundStatus === "requested" && (
+                            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 ring-1 ring-inset ring-amber-300 animate-pulse">
+                              <RotateCcw size={8} /> Refund Pending
+                            </span>
+                          )}
+                          {payment.refundStatus === "rejected" && (
+                            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 ring-1 ring-inset ring-red-200">
+                              Refund Rej.
+                            </span>
+                          )}
                         </td>
 
                         {/* Actions */}

@@ -447,6 +447,16 @@ export function getAllAppointments(): Appointment[] {
             transactionId: payment.transactionId,
             paymentMethod: payment.method,
             consultationFee: resolvedFee,
+            // ── Refund fields projected from payment ─────────────────────────
+            refundStatus: payment.refundStatus,
+            refundRequestedAt: payment.refundRequestedAt,
+            refundRequestedBy: payment.refundRequestedBy,
+            refundReason: payment.refundReason,
+            refundAmount: payment.refundAmount,
+            refundId: payment.refundId,
+            refundedAt: payment.refundedAt,
+            refundRejectedAt: payment.refundRejectedAt,
+            refundRejectedReason: payment.refundRejectedReason,
           }
         : {}),
     };

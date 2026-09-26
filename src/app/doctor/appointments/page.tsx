@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { Search, X, User, Calendar, Video, Building2 } from "lucide-react";
+import { Search, X, User, Calendar, Video, Building2, RotateCcw } from "lucide-react";
 import {
   getAllAppointments,
   getComputedAppointmentStatus,
@@ -292,7 +292,19 @@ export default function DoctorAppointmentsPage() {
 
                       {/* Payment badge */}
                       <td className="px-5 py-3.5">
-                        {apt.paymentStatus === "paid" ? (
+                        {apt.paymentStatus === "refunded" || apt.refundStatus === "refunded" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
+                            <RotateCcw size={10} /> Refunded
+                          </span>
+                        ) : apt.refundStatus === "requested" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 ring-1 ring-inset ring-amber-300 animate-pulse">
+                            <RotateCcw size={10} /> Refund Req.
+                          </span>
+                        ) : apt.refundStatus === "rejected" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200">
+                            Refund Rej.
+                          </span>
+                        ) : apt.paymentStatus === "paid" ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
                             Paid
                           </span>
