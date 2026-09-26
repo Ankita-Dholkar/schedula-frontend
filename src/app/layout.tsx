@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 
 import StoreProvider from "@/store/StoreProvider";
 import ToastContainer from "@/components/ui/ToastContainer";
+import MaintenanceBanner from "@/components/ui/MaintenanceBanner";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-full flex flex-col">
         <StoreProvider>
+          <MaintenanceBanner />
           {children}
           <ToastContainer />
         </StoreProvider>

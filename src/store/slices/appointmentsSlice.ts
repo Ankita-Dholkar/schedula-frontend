@@ -134,6 +134,21 @@ export const appointmentsSlice = createSlice({
     builder.addCase(paymentsSlice.actions.recordPaidPayment, (state) => {
       state.appointments = getAllAppointments();
     });
+
+    // requestRefund: refresh appointments so refundStatus fields are projected
+    builder.addCase(paymentsSlice.actions.requestRefund, (state) => {
+      state.appointments = getAllAppointments();
+    });
+
+    // approveRefund: refresh appointments so payment.status = 'refunded' is reflected
+    builder.addCase(paymentsSlice.actions.approveRefund, (state) => {
+      state.appointments = getAllAppointments();
+    });
+
+    // rejectRefund: refresh appointments so refundStatus = 'rejected' is reflected
+    builder.addCase(paymentsSlice.actions.rejectRefund, (state) => {
+      state.appointments = getAllAppointments();
+    });
   },
 });
 

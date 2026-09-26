@@ -26,6 +26,11 @@ function loadPlatformSettings(): PlatformSettings {
 function savePlatformSettings(settings: PlatformSettings): void {
   try {
     localStorage.setItem(PLATFORM_SETTINGS_KEY, JSON.stringify(settings));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("schedula_platform_settings_changed", { detail: settings })
+      );
+    }
   } catch {
     /* ignore */
   }
@@ -39,7 +44,10 @@ export type AdminManagementState = {
 
 const initialState: AdminManagementState = {
   admins: [],
-  platformSettings: DEFAULT_PLATFORM_SETTINGS,
+  platformSettings:
+    typeof window !== "undefined"
+      ? loadPlatformSettings()
+      : DEFAULT_PLATFORM_SETTINGS,
   hydrated: false,
 };
 
@@ -49,7 +57,6 @@ export const adminManagementSlice = createSlice({
   reducers: {
     /** Hydrate admin users and platform settings from localStorage (run once on mount). */
     hydrateAdminManagement: (state) => {
-      if (state.hydrated) return;
       state.admins = loadAdminUsers();
       state.platformSettings = loadPlatformSettings();
       state.hydrated = true;

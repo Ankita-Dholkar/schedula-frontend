@@ -17,6 +17,9 @@ import {
   Building2,
   MapPin,
   Wifi,
+  RotateCcw,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import UserPortalHeader from "@/features/user-portal/components/UserPortalHeader";
 import ReviewModal from "@/features/user-portal/components/ReviewModal";
@@ -28,8 +31,9 @@ import type { Appointment } from "@/types/appointment";
 import { CONSULTATION_FEE } from "@/types/payment";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { refreshAppointments } from "@/store/slices/appointmentsSlice";
+import { requestRefund } from "@/store/slices/paymentsSlice";
 import { selectHasReviewedAppointment } from "@/store/slices/reviewsSlice";
-import { getComputedAppointmentStatus } from "@/lib/mock-data/appointments";
+import { getComputedAppointmentStatus, saveDoctorNotification, saveNotification } from "@/lib/mock-data/appointments";
 import type { ComputedStatus } from "@/lib/mock-data/appointments";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -248,6 +252,10 @@ function UserAppointmentsPage() {
   const [rescheduleAppointment, setRescheduleAppointment] = useState<Appointment | null>(null);
   const [cancelAppointment, setCancelAppointment] = useState<Appointment | null>(null);
   const [paymentAppointment, setPaymentAppointment] = useState<Appointment | null>(null);
+  const [refundAppointment, setRefundAppointment] = useState<Appointment | null>(null);
+  const [refundReason, setRefundReason] = useState("");
+  const [refundSubmitting, setRefundSubmitting] = useState(false);
+  const [refundSuccess, setRefundSuccess] = useState<string | null>(null);
 
   const refresh = useCallback(() => { dispatch(refreshAppointments()); }, [dispatch]);
 
@@ -398,9 +406,21 @@ function UserAppointmentsPage() {
                       ₹{apt.consultationFee ?? ((apt.type && apt.type.toLowerCase().includes("check")) ? 800 : 300)}
                     </span>
                   </div>
-                  {apt.paymentStatus === "paid" ? (
+                  {apt.paymentStatus === "refunded" || apt.refundStatus === "refunded" ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
+                      <RotateCcw size={10} /> Refunded
+                    </span>
+                  ) : apt.refundStatus === "requested" ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
+                      <RotateCcw size={10} /> Refund Pending
+                    </span>
+                  ) : apt.refundStatus === "rejected" ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200">
+                      <AlertCircle size={10} /> Refund Rejected
+                    </span>
+                  ) : apt.paymentStatus === "paid" ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                      Paid
+                      <CheckCircle2 size={10} /> Paid
                     </span>
                   ) : apt.paymentStatus === "failed" ? (
                     <button
@@ -468,9 +488,63 @@ function UserAppointmentsPage() {
                   </div>
                 )}
 
-                {/* ── Cancelled / Missed: Rebook ── */}
+                {/* ── Cancelled / Missed: Refund + Rebook ── */}
                 {(activeTab === "cancelled" || activeTab === "missed") && (
-                  <div className="mt-4 border-t border-[var(--line)] pt-4">
+                  <div className="mt-4 flex flex-col gap-2 border-t border-[var(--line)] pt-4">
+                    {/* Refund status display */}
+                    {(apt.paymentStatus === "refunded" || apt.refundStatus === "refunded") && (
+                      <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <RotateCcw size={14} className="text-violet-600" />
+                          <p className="text-sm font-semibold text-violet-700">Refund Processed</p>
+                        </div>
+                        {apt.refundAmount && (
+                          <p className="mt-0.5 text-xs text-violet-600">₹{apt.refundAmount} refunded</p>
+                        )}
+                        {apt.refundId && (
+                          <p className="mt-0.5 font-mono text-[10px] text-violet-500">{apt.refundId}</p>
+                        )}
+                        {apt.refundedAt && (
+                          <p className="text-[10px] text-violet-500">on {new Date(apt.refundedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+                        )}
+                      </div>
+                    )}
+                    {apt.refundStatus === "requested" && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <RotateCcw size={14} className="animate-spin text-amber-600" />
+                          <p className="text-sm font-semibold text-amber-700">Refund Request Pending</p>
+                        </div>
+                        <p className="mt-0.5 text-xs text-amber-600">Your refund request is under review by the doctor.</p>
+                        {apt.refundRequestedAt && (
+                          <p className="text-[10px] text-amber-500">Requested on {new Date(apt.refundRequestedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+                        )}
+                      </div>
+                    )}
+                    {apt.refundStatus === "rejected" && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle size={14} className="text-red-600" />
+                          <p className="text-sm font-semibold text-red-700">Refund Request Rejected</p>
+                        </div>
+                        {apt.refundRejectedReason && (
+                          <p className="mt-0.5 text-xs text-red-600">Reason: {apt.refundRejectedReason}</p>
+                        )}
+                        {apt.refundRejectedAt && (
+                          <p className="text-[10px] text-red-500">on {new Date(apt.refundRejectedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+                        )}
+                      </div>
+                    )}
+                    {/* Request Refund button — eligible only when paid and no refund yet */}
+                    {apt.paymentStatus === "paid" &&
+                      (!apt.refundStatus || apt.refundStatus === "none") && (
+                      <button
+                        onClick={() => { setRefundAppointment(apt); setRefundReason(""); }}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
+                      >
+                        <RotateCcw size={14} /> Request Refund
+                      </button>
+                    )}
                     <button
                       onClick={() => (window.location.href = "/user/doctors")}
                       className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] py-2 text-sm font-semibold text-white hover:bg-[var(--brand-deep)]"
@@ -531,6 +605,96 @@ function UserAppointmentsPage() {
             setActiveTab("cancelled");
           }}
         />
+      )}
+
+      {/* Request Refund Modal */}
+      {refundAppointment && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={() => setRefundAppointment(null)} />
+          <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--line)] bg-white p-6 shadow-2xl">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100">
+                <RotateCcw size={18} className="text-violet-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[var(--ink)]">Request Refund</h3>
+                <p className="text-xs text-[var(--muted)]">{refundAppointment.clinician} · {new Date(refundAppointment.startsAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+              </div>
+            </div>
+
+            <div className="mb-4 rounded-xl border border-violet-100 bg-violet-50 p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-violet-700">Amount Paid</span>
+                <span className="text-xl font-bold text-violet-700">₹{refundAppointment.consultationFee ?? refundAppointment.refundAmount ?? 0}</span>
+              </div>
+              <p className="mt-1 text-xs text-violet-600">
+                Appointment <span className="capitalize font-medium">{refundAppointment.status}</span>. Full refund will be processed on doctor approval.
+              </p>
+            </div>
+
+            <div className="mb-5">
+              <label className="mb-1.5 block text-xs font-semibold text-[var(--ink)]">
+                Reason for refund <span className="text-[var(--muted)] font-normal">(optional)</span>
+              </label>
+              <textarea
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                placeholder="e.g. I was unwell and couldn't attend..."
+                className="w-full rounded-xl border border-[var(--line)] bg-[var(--canvas)] px-3.5 py-2.5 text-sm text-[var(--ink)] placeholder:text-[var(--muted)] focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 resize-none h-20"
+              />
+            </div>
+
+            {refundSuccess && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2.5 text-sm text-emerald-700">
+                <CheckCircle2 size={14} />
+                {refundSuccess}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setRefundAppointment(null); setRefundSuccess(null); }}
+                className="flex-1 rounded-xl border border-[var(--line)] py-2.5 text-sm font-semibold text-[var(--ink)] hover:bg-stone-50"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={refundSubmitting}
+                onClick={async () => {
+                  if (!refundAppointment) return;
+                  setRefundSubmitting(true);
+                  try {
+                    dispatch(requestRefund({
+                      appointmentId: refundAppointment.id,
+                      refundReason: refundReason.trim() || undefined,
+                      patientName: refundAppointment.patient.name,
+                    }));
+                    // Notify patient
+                    saveNotification({
+                      appointmentId: refundAppointment.id,
+                      patientName: refundAppointment.patient.name,
+                      message: `Your refund request of ₹${refundAppointment.consultationFee ?? 0} for your appointment with ${refundAppointment.clinician} has been submitted.`,
+                    });
+                    // Notify doctor
+                    saveDoctorNotification({
+                      appointmentId: refundAppointment.id,
+                      patientName: refundAppointment.patient.name,
+                      message: `${refundAppointment.patient.name} has requested a refund of ₹${refundAppointment.consultationFee ?? 0} for their ${refundAppointment.status} appointment.`,
+                    });
+                    dispatch(refreshAppointments());
+                    setRefundSuccess("Refund request submitted! The doctor will review and respond soon.");
+                    setTimeout(() => { setRefundAppointment(null); setRefundSuccess(null); }, 2500);
+                  } finally {
+                    setRefundSubmitting(false);
+                  }
+                }}
+                className="flex-1 rounded-xl bg-violet-600 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-60"
+              >
+                {refundSubmitting ? "Submitting…" : "Submit Request"}
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </>
   );

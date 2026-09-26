@@ -1,4 +1,4 @@
-import type { PaymentStatus, PaymentMethod } from "@/types/payment";
+import type { PaymentStatus, PaymentMethod, RefundStatus } from "@/types/payment";
 
 export type AppointmentStatus = "confirmed" | "pending" | "cancelled" | "completed" | "missed" | "starting-soon" | "live";
 
@@ -49,4 +49,23 @@ export type Appointment = {
   rescheduledAt?: string;
   /** The reason provided when the appointment was rescheduled. */
   rescheduleReason?: string;
+  // ── Refund convenience fields (source of truth: paymentsSlice) ──────────────
+  /** Mirrors Payment.refundStatus for UI rendering. */
+  refundStatus?: RefundStatus;
+  /** Mirrors Payment.refundRequestedAt. */
+  refundRequestedAt?: string;
+  /** Mirrors Payment.refundRequestedBy. */
+  refundRequestedBy?: string;
+  /** Mirrors Payment.refundReason. */
+  refundReason?: string;
+  /** Mirrors Payment.refundAmount. */
+  refundAmount?: number;
+  /** Mirrors Payment.refundId. */
+  refundId?: string;
+  /** Mirrors Payment.refundedAt. */
+  refundedAt?: string;
+  /** Mirrors Payment.refundRejectedAt. */
+  refundRejectedAt?: string;
+  /** Mirrors Payment.refundRejectedReason. */
+  refundRejectedReason?: string;
 };

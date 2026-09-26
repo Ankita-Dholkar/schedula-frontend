@@ -630,26 +630,47 @@ export default function AdminSettingsPage() {
             </div>
 
             {/* Maintenance Mode */}
-            <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:col-span-2">
-              <div>
-                <div className="flex items-center gap-2">
-                  <AlertTriangle size={14} className="text-amber-600" />
-                  <p className="text-sm font-medium text-[var(--ink)]">Maintenance Mode</p>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:col-span-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={14} className="text-amber-600" />
+                    <p className="text-sm font-medium text-[var(--ink)]">Maintenance Mode</p>
+                  </div>
+                  <p className="mt-0.5 text-xs text-amber-700">
+                    Enabling this will display a maintenance notice to all users. Admin portal remains accessible.
+                  </p>
                 </div>
-                <p className="mt-0.5 text-xs text-amber-700">
-                  Enabling this will display a maintenance notice to all users. Admin portal remains accessible.
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setPlatformForm((p) => ({ ...p, maintenanceMode: !p.maintenanceMode }))}
+                  className={`ml-4 relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${platformForm.maintenanceMode ? "bg-amber-500" : "bg-slate-300"}`}
+                  role="switch"
+                  aria-checked={platformForm.maintenanceMode}
+                  id="platform-maintenance-toggle"
+                >
+                  <span className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${platformForm.maintenanceMode ? "translate-x-4" : "translate-x-0"}`} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setPlatformForm((p) => ({ ...p, maintenanceMode: !p.maintenanceMode }))}
-                className={`ml-4 relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${platformForm.maintenanceMode ? "bg-amber-500" : "bg-slate-300"}`}
-                role="switch"
-                aria-checked={platformForm.maintenanceMode}
-                id="platform-maintenance-toggle"
-              >
-                <span className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${platformForm.maintenanceMode ? "translate-x-4" : "translate-x-0"}`} />
-              </button>
+
+              {platformForm.maintenanceMode && (
+                <div className="mt-3 border-t border-amber-200/60 pt-3">
+                  <label className="mb-1 block text-xs font-semibold text-amber-900">
+                    Notice Message (shown on user &amp; doctor portals)
+                  </label>
+                  <input
+                    type="text"
+                    id="platform-maintenance-msg"
+                    value={platformForm.maintenanceMessage ?? ""}
+                    onChange={(e) => setPlatformForm((p) => ({ ...p, maintenanceMessage: e.target.value }))}
+                    placeholder="The platform is currently undergoing scheduled maintenance. Some features may be temporarily unavailable."
+                    className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs text-[var(--ink)] placeholder:text-gray-400 outline-none transition focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                  />
+                  <p className="mt-1 text-[11px] text-amber-700">
+                    Leave blank to show the default system maintenance notice.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
